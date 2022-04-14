@@ -7,7 +7,9 @@ Plotting software for Keithley 2015 THD multimeter
  - `tkinter (tk)`
 
 ## Usage
-python keithley.py
+```python thd.py```
+or
+```python logger.py```
 
 ## Screenshots
 ![demo image](a.png?raw=true)
