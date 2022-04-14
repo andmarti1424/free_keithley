@@ -109,7 +109,7 @@ class mclass:
         ax = self.fig.get_axes()[0]
         ax.clear()         # clear axes from previous plot !!!!
         ax.tick_params(labeltop=False, labelright=True)
-        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65)
+        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkred', align='center', width=.65)
         ax.margins(x=0)
         ax.margins(y=0)
         ax.set_ylim([BOTTOM_DB, 0])
@@ -119,7 +119,8 @@ class mclass:
         ax.set_yticks([y - 0.5 for y in ax.get_yticks()][1:], minor='true')
         ax.set_xlabel('harmonics', fontsize=20, loc='right')
         ax.set_ylabel('dB', fontsize=20, loc='center')
-        ax.grid(color = 'black', linestyle = '--', linewidth = 0.5, which='minor')
+        ax.set_facecolor('xkcd:black')
+        ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         self.fig.canvas.draw()
 
     def change_state(self):
@@ -143,7 +144,7 @@ class mclass:
         # end sim
 
         ax.tick_params(labeltop=False, labelright=True)
-        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65)
+        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkred', align='center', width=.65)
         ax.margins(x=0)
         ax.margins(y=0)
         ax.set_ylim([BOTTOM_DB, 0])
@@ -153,7 +154,8 @@ class mclass:
         ax.set_yticks([y - 0.5 for y in ax.get_yticks()][1:], minor='true')
         ax.set_xlabel('harmonics', fontsize=20, loc='center')
         ax.set_ylabel('dB', fontsize=20, loc='center')
-        ax.grid(color = 'black', linestyle = '--', linewidth = 0.5, which='minor')
+        ax.set_facecolor('xkcd:black')
+        ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().pack(side=BOTTOM, expand=0)
         canvas.draw()

@@ -12,8 +12,8 @@ or
 ```python logger.py```
 
 ## Screenshots
-![demo image](a.png?raw=true)
-![demo image](b.png?raw=true)
+![demo image](d.png?raw=true)
+![demo image](c.png?raw=true)
 
 ## Donations
 Please support the development of this app by making a DONATION with PayPal.

@@ -72,9 +72,11 @@ class mclass:
             df = pd.concat([df, dfn])
             self.ax.set_xlabel('ms', fontsize=20, loc='right')
             self.ax.set_ylabel('Vrms', fontsize=20, loc='center')
+            self.ax.set_facecolor('xkcd:black')
             ax = self.fig.get_axes()[0]
+            ax.grid(visible=True, which='major', axis='both', color='slategray', linestyle='--', linewidth=0.5)
             ax.tick_params(labeltop=False, labelright=True)
-            ax.plot(df.ms, df.value)
+            ax.plot(df.ms, df.value, color="xkcd:orange")
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
             time.sleep(REFRESH_TIME)
