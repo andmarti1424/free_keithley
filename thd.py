@@ -109,16 +109,16 @@ class mclass:
         ax = self.fig.get_axes()[0]
         ax.clear()         # clear axes from previous plot !!!!
         ax.tick_params(labeltop=False, labelright=True)
-        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkred', align='center', width=.65)
+        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6)
         ax.margins(x=0)
         ax.margins(y=0)
         ax.set_ylim([BOTTOM_DB, 0])
         ax.set_xticks(range(PLOT_MAX_HARM))
         ax.set_yticks(range(BOTTOM_DB, 10, 10)) # la escala del eje Y cada 10 entre 0 y -100dB
-        ax.set_xticks([x - 0.5 for x in ax.get_xticks()], minor='true')
-        ax.set_yticks([y - 0.5 for y in ax.get_yticks()][1:], minor='true')
-        ax.set_xlabel('harmonics', fontsize=20, loc='right')
-        ax.set_ylabel('dB', fontsize=20, loc='center')
+        #ax.set_xticks([x - 0.5 for x in ax.get_xticks()], minor='true')
+        #ax.set_yticks([y - 0.5 for y in ax.get_yticks()][1:], minor='true')
+        ax.set_ylabel('response, dB', fontsize=20, loc='center')
+        ax.set_xlabel('harmonics', fontsize=20, loc='center')
         ax.set_facecolor('xkcd:black')
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         self.fig.canvas.draw()
@@ -144,7 +144,7 @@ class mclass:
         # end sim
 
         ax.tick_params(labeltop=False, labelright=True)
-        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkred', align='center', width=.65)
+        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6)
         ax.margins(x=0)
         ax.margins(y=0)
         ax.set_ylim([BOTTOM_DB, 0])
@@ -152,8 +152,8 @@ class mclass:
         ax.set_yticks(range(BOTTOM_DB, 10, 10)) # la escala del eje Y cada 10 entre 0 y -100dB
         ax.set_xticks([x - 0.5 for x in ax.get_xticks()], minor='true')
         ax.set_yticks([y - 0.5 for y in ax.get_yticks()][1:], minor='true')
+        ax.set_ylabel('response, dB', fontsize=20, loc='center')
         ax.set_xlabel('harmonics', fontsize=20, loc='center')
-        ax.set_ylabel('dB', fontsize=20, loc='center')
         ax.set_facecolor('xkcd:black')
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)

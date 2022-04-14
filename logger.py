@@ -70,8 +70,8 @@ class mclass:
 
             dfn = pd.DataFrame({'ms': [mytime], 'value': [value]})
             df = pd.concat([df, dfn])
-            self.ax.set_xlabel('ms', fontsize=20, loc='right')
-            self.ax.set_ylabel('Vrms', fontsize=20, loc='center')
+            self.ax.set_xlabel('time, ms', fontsize=20, loc='right')
+            self.ax.set_ylabel('level, Vrms', fontsize=20, loc='center')
             self.ax.set_facecolor('xkcd:black')
             ax = self.fig.get_axes()[0]
             ax.grid(visible=True, which='major', axis='both', color='slategray', linestyle='--', linewidth=0.5)
