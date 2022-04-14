@@ -12,10 +12,10 @@ or
 ```python logger.py```
 
 ## Screenshots
-![demo image](d.png?raw=true)
-![demo image](c.png?raw=true)
-![demo image](e.png?raw=true)
-![demo image](f.png?raw=true)
+![demo image](screenshots/d.png?raw=true)
+![demo image](screenshots/c.png?raw=true)
+![demo image](screenshots/e.png?raw=true)
+![demo image](screenshots/f.png?raw=true)
 
 ## Donations
 Please support the development of this app by making a DONATION with PayPal.
