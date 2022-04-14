@@ -170,6 +170,6 @@ class mclass:
         threading.Thread(target=self._replot_thread).start()
 
 window = Tk()
-start = mclass (window)
+start = mclass(window)
 start.replot_thread()
 window.mainloop()
