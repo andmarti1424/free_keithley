@@ -115,8 +115,8 @@ class mclass:
         ax.set_ylim([BOTTOM_DB, 0])
         ax.set_xticks(range(PLOT_MAX_HARM))
         ax.set_yticks(range(BOTTOM_DB, 10, 10)) # la escala del eje Y cada 10 entre 0 y -100dB
-        #ax.set_xticks([x - 0.5 for x in ax.get_xticks()], minor='true')
-        #ax.set_yticks([y - 0.5 for y in ax.get_yticks()][1:], minor='true')
+        ax.set_xticks([x - 0.5 for x in ax.get_xticks()], minor='true')
+        ax.set_yticks([y - 0.5 for y in ax.get_yticks()][1:], minor='true')
         ax.set_ylabel('response, dB', fontsize=20, loc='center')
         ax.set_xlabel('harmonics', fontsize=20, loc='center')
         ax.set_facecolor('xkcd:black')
