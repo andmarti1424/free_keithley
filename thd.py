@@ -32,12 +32,12 @@ class mclass:
     def __init__(self,  window):
         self.window = window
         self.continuePlotting = False
+        self.plot_packed = 0
         np.random.seed(42) # for data sim
 
         #UI and some data
         self.title = Label(window, text='Keithley 2015 - THD measurement', fg='#1C5AAC', font=('Helvetica 24 bold'))
         self.title.pack(ipady=15, expand=False, side=TOP)
-
         self.lbl_harm_qty = Label(window, text = "Harm. Qty", font='Helvetica 20 bold')
         self.lbl_harm_qty.place(x = 40, y = 60)
         new_text = DEFAULT_QTY_HARM
@@ -135,6 +135,7 @@ class mclass:
         ax.set_facecolor('xkcd:black')
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         self.fig.canvas.mpl_connect('button_press_event', self.on_click)
+
         self.fig.canvas.draw()
 
     def change_state(self):
@@ -143,7 +144,7 @@ class mclass:
             self.button_start['text'] = "START"
         else:
             self.continuePlotting = True
-            self.plot()
+            if (not self.plot_packed): self.plot()
             self.button_start['text'] = "STOP"
             self.replot_thread()
 
@@ -181,6 +182,7 @@ class mclass:
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().pack(side=BOTTOM, expand=0)
+        self.plot_packed = 1
         canvas.mpl_connect('button_press_event', self.on_click)
         canvas.draw()
 
