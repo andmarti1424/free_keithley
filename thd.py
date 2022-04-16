@@ -1,6 +1,6 @@
 import matplotlib
 import matplotlib.pyplot as plt
-plt.rcParams['toolbar'] = 'None'
+#plt.rcParams['toolbar'] = 'None'
 
 from matplotlib.widgets import TextBox
 matplotlib.use('TkAgg')
@@ -13,12 +13,15 @@ import pandas as pd
 import time
 import threading
 
+#for data sim
+import numpy as np
+
 # some settings
 UPDATE_INTERVAL=0.2
 BOTTOM_DB = -100
 PLOT_MAX_HARM = 10
 DEFAULT_QTY_HARM = 4
-DEBUG = 1
+DEBUG = 0
 
 #TODO
 #set start as default button
@@ -29,6 +32,7 @@ class mclass:
     def __init__(self,  window):
         self.window = window
         self.continuePlotting = False
+        np.random.seed(42) # for data sim
 
         #UI and some data
         self.title = Label(window, text='Keithley 2015 - THD measurement', fg='#1C5AAC', font=('Helvetica 24 bold'))
@@ -91,25 +95,34 @@ class mclass:
 
     def replot(self):
         #sim change in data
-        self.data.iloc[1, self.data.columns.get_loc('dB')] += 15
-        self.data.iloc[2, self.data.columns.get_loc('dB')] += 8
-        self.data.iloc[3, self.data.columns.get_loc('dB')] += 12
+        value = np.random.uniform(-1,1)
+        self.data.iloc[1, self.data.columns.get_loc('dB')] += 15 * value
+        value = np.random.uniform(-1,1)
+        self.data.iloc[2, self.data.columns.get_loc('dB')] += 8 * value
+        value = np.random.uniform(-1,1)
+        self.data.iloc[3, self.data.columns.get_loc('dB')] += 12 * value
         if self.data.iloc[1, self.data.columns.get_loc('dB')] >= 0:
             self.data.iloc[1, self.data.columns.get_loc('dB')] = -75
         if self.data.iloc[2, self.data.columns.get_loc('dB')] >= 0:
             self.data.iloc[2, self.data.columns.get_loc('dB')] = -90
         if self.data.iloc[3, self.data.columns.get_loc('dB')] >= 0:
             self.data.iloc[3, self.data.columns.get_loc('dB')] = -80
+        if self.data.iloc[1, self.data.columns.get_loc('dB')] <= -100:
+            self.data.iloc[1, self.data.columns.get_loc('dB')] = -75
+        if self.data.iloc[2, self.data.columns.get_loc('dB')] <= -100:
+            self.data.iloc[2, self.data.columns.get_loc('dB')] = -90
+        if self.data.iloc[3, self.data.columns.get_loc('dB')] <= -100:
+            self.data.iloc[3, self.data.columns.get_loc('dB')] = -80
         if DEBUG:
             print("---------")
             print(self.data.dB)
             print("---------")
-        #end sim
+        #end of data sim
 
         ax = self.fig.get_axes()[0]
         ax.clear()         # clear axes from previous plot !!!!
         ax.tick_params(labeltop=False, labelright=True)
-        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6)
+        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6, picker=True)
         ax.margins(x=0)
         ax.margins(y=0)
         ax.set_ylim([BOTTOM_DB, 0])
@@ -121,6 +134,7 @@ class mclass:
         ax.set_xlabel('harmonics', fontsize=20, loc='center')
         ax.set_facecolor('xkcd:black')
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
+        self.fig.canvas.mpl_connect('button_press_event', self.on_click)
         self.fig.canvas.draw()
 
     def change_state(self):
@@ -133,6 +147,15 @@ class mclass:
             self.button_start['text'] = "STOP"
             self.replot_thread()
 
+    def on_click(self, event):
+        ax = event.inaxes
+        x = event.xdata
+        lbls = ax.get_xticklabels()
+        idx = int(x.round())
+        lbl = lbls[idx]
+        print(lbl.get_text())
+        #self.fig.canvas.draw_idle()
+
     def plot(self):
         self.fig = Figure(figsize=(9,9))
         ax = self.fig.add_subplot(111)
@@ -144,7 +167,7 @@ class mclass:
         # end sim
 
         ax.tick_params(labeltop=False, labelright=True)
-        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6)
+        ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6, picker=True)
         ax.margins(x=0)
         ax.margins(y=0)
         ax.set_ylim([BOTTOM_DB, 0])
@@ -158,9 +181,12 @@ class mclass:
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().pack(side=BOTTOM, expand=0)
+        canvas.mpl_connect('button_press_event', self.on_click)
         canvas.draw()
+
         #self.continuePlotting = False
         #time.sleep(UPDATE_INTERVAL)
+
 
     def _replot_thread(self):
         if DEBUG:
