@@ -4,6 +4,7 @@ Plotting software for Keithley 2015 THD multimeter
 ## Requirements
  - `python 3.10+`
  - `matplotlib`
+ - `python-pyserial`
  - `tkinter (tk)`
 
 ## Usage
