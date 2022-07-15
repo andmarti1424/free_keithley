@@ -12,25 +12,42 @@ from tkinter import *
 import serial
 
 # settings
+DEBUG = 0
 REFRESH_TIME = 0.10 # in seconds
 
 class mclass:
     def start_serial(self):
-        self.ser = serial.Serial()
         try:
-            self.ser.port='COM2'
+            self.ser.port='/dev/ttyUSB0'
             self.ser.baudrate=9600
-            self.ser.timeout=1
-            self.ser.parity=serial.PARITY_ODD
-            self.ser.stopbits=serial.STOPBITS_TWO
-            self.ser.bytesize=serial.SEVENBITS
+            self.ser.timeout=0
+            self.ser.parity=serial.PARITY_NONE
+            self.ser.stopbits=serial.STOPBITS_ONE
+            self.ser.bytesize=serial.EIGHTBITS
+            self.ser.xonxoff=False
             self.ser.open()
+            self.send_cmd('*RST')
+            self.send_cmd(':INITiate:CONTinuous OFF;:ABORt')
+            self.send_cmd('*OPC?')
+            resp = self.send_cmd('*IDN?')
+            if DEBUG:
+                print('version: {}'.format(repr(resp)))
+
+            self.send_cmd(':SENS:FUNC \'VOLT:DC\'')
+            self.send_cmd(':SENS:VOLT:DC:RANG 10')             #Use fixed range for fastest readings
+            #self.send_cmd(':SENS:VOLT:AC:RANG:AUTO ON')
+            self.send_cmd(':SENS:VOLT:DC:NPLC 0.01')           #Use lowest NPLC setting for highest speed readings
+            self.send_cmd(':SYST:AZER:STAT OFF')               #Turn off autozero to increase speed, but may cause drift over time
+            self.send_cmd(':SENS:VOLT:DC:AVER:STAT OFF')       #Turn off averaging filter for speed
+            self.send_cmd(':TRIG:COUN 1')
         except:
             if (not self.ser.isOpen()):
+                print("ERROR opening serial")
                 return -1
 
-    def write(s, term = '\r'):
-        print('TX >> ', s)
+    def write(self, s, term = '\r'):
+        if DEBUG:
+            print('TX >> ', s)
         self.ser.write(str.encode(s))
         if term:
             self.ser.write(b'\r')
@@ -43,16 +60,17 @@ class mclass:
             c = self.ser.read(1)
             if c == b'\r':
                 s = b''.join(buf).decode('ascii')
-                print("RX << ", repr(s))
+                if DEBUG:
+                    print("RX << ", repr(s))
                 return s.strip()
             else:
                 buf.append(c)
 
-    def send_cmd(cmd):
-        write(cmd)
+    def send_cmd(self, cmd):
+        self.write(cmd)
 
         if '?' in cmd:
-            response = read()
+            response = self.read()
 
             if ',' in response:
                 response = response.split(',')
@@ -88,31 +106,20 @@ class mclass:
         #:INITiate
         #*TRG
         """
-        self.send_cmd('*RST')
-        self.send_cmd(':INITiate:CONTinuous OFF;:ABORt')
-        self.send_cmd('*OPC?')
-        resp = self.send_cmd('*IDN?')
-        print('version: {}'.format(repr(resp)))
-
-        self.send_cmd(':SENS:FUNC \'VOLT:DC\'')
-        self.send_cmd(':SENS:VOLT:DC:RANG 10')             #Use fixed range for fastest readings
-        self.send_cmd(':SENS:VOLT:AC:RANG:AUTO ON')
-        self.send_cmd(':SENS:VOLT:DC:NPLC 10')             #Use highest NPLC setting for slowest readings
-        self.send_cmd(':SYST:AZER:STAT OFF')               #Turn off autozero to increase speed, but may cause drift over time
-        self.send_cmd(':SENS:VOLT:DC:AVER:STAT OFF')       #Turn off averaging filter for speed
-        self.send_cmd(':TRIG:COUN 1')
-        res = self.send_cmd(':READ?')
-        print(res)
+        res = float(self.send_cmd(':READ?'))
+        if DEBUG:
+            print(res)
         return res
 
     def __init__(self,  window):
+        self.ser = serial.Serial()
         self.window = window
         self.continuePlotting = False
         self.plot_packed = False
         self.fig = Figure(figsize=(9,9))
         self.ax = self.fig.add_subplot(111)
         self.fig.canvas = FigureCanvasTkAgg(self.fig, master=window)
-        np.random.seed(42)
+        #np.random.seed(42)
 
         self.title = Label(window, text='Keithley 2015 - Logger', fg='#1C5AAC', font=('Helvetica 24 bold'))
         self.title.pack(ipady=15, expand=False, side=TOP)
@@ -120,17 +127,23 @@ class mclass:
         self.button_start.place(x=350, y=85)
         self.button_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18 bold')
         self.button_quit.place(x=210, y=85)
+        self.value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 18 bold'))
+        self.value.place(x=210, y=200)
+        self.start_serial()
 
     def change_state(self):
         if self.continuePlotting == True:
             self.continuePlotting = False
             self.button_start['text'] = "START"
+            self.value.config(text="")
         else:
             self.continuePlotting = True
             self.button_start['text'] = "STOP"
             self.plot()
 
     def quit(self):
+        if (self.ser.isOpen()):
+            self.ser.close()
         self.continuePlotting = False
         Tk().quit()
 
@@ -149,15 +162,18 @@ class mclass:
         self.fig.canvas.flush_events()
 
         while(self.continuePlotting):
-            #value = self.measure()
-            # data sim
-            value = np.random.random()
-            if (round(time.time() * 1000) - plot_start_time > 15000):
-                value *= -10
-            if (round(time.time() * 1000) - plot_start_time > 10000):
-                value *= 10
-            mytime = round(time.time() * 1000) - plot_start_time
+            value = self.measure()
+            ## data sim
+            #value = np.random.random()
+            #if (round(time.time() * 1000) - plot_start_time > 15000):
+            #    value *= -10
+            #if (round(time.time() * 1000) - plot_start_time > 10000):
+            #    value *= 10
             #end of data sim
+            mytime = round(time.time() * 1000) - plot_start_time
+            self.value.config(text=str(value) + " Vrms")
+            if DEBUG:
+                print("value measured: " + str(value))
 
             dfn = pd.DataFrame({'ms': [mytime], 'value': [value]})
             df = pd.concat([df, dfn])
@@ -170,7 +186,7 @@ class mclass:
             ax.plot(df.ms, df.value, color="xkcd:orange")
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
-            time.sleep(REFRESH_TIME)
+            #time.sleep(REFRESH_TIME)
 
 window = Tk()
 start = mclass(window)
