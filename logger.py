@@ -12,8 +12,10 @@ from tkinter import *
 import serial
 
 # settings
-DEBUG = 0
-REFRESH_TIME = 0.10 # in seconds
+DEBUG = 0 # print debug data on terminal
+WINDOW_TIME = 10000 #in ms
+SIM = 0 # do not interact with equipment, just sim data
+REFRESH_TIME = 0.5 # in seconds. Used only on simulation
 
 class mclass:
     def start_serial(self):
@@ -36,6 +38,7 @@ class mclass:
             self.send_cmd(':SENS:FUNC \'VOLT:DC\'')
             self.send_cmd(':SENS:VOLT:DC:RANG 10')             #Use fixed range for fastest readings
             #self.send_cmd(':SENS:VOLT:AC:RANG:AUTO ON')
+            self.send_cmd('DISP:ENAB OFF')
             self.send_cmd(':SENS:VOLT:DC:NPLC 0.01')           #Use lowest NPLC setting for highest speed readings
             self.send_cmd(':SYST:AZER:STAT OFF')               #Turn off autozero to increase speed, but may cause drift over time
             self.send_cmd(':SENS:VOLT:DC:AVER:STAT OFF')       #Turn off averaging filter for speed
@@ -119,7 +122,7 @@ class mclass:
         self.fig = Figure(figsize=(9,9))
         self.ax = self.fig.add_subplot(111)
         self.fig.canvas = FigureCanvasTkAgg(self.fig, master=window)
-        #np.random.seed(42)
+        np.random.seed(42)
 
         self.title = Label(window, text='Keithley 2015 - Logger', fg='#1C5AAC', font=('Helvetica 24 bold'))
         self.title.pack(ipady=15, expand=False, side=TOP)
@@ -127,9 +130,15 @@ class mclass:
         self.button_start.place(x=350, y=85)
         self.button_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18 bold')
         self.button_quit.place(x=210, y=85)
+        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font='Helvetica 18 bold')
+        self.button_clear.place(x=490, y=85)
         self.value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 18 bold'))
         self.value.place(x=210, y=200)
-        self.start_serial()
+        if not SIM:
+            self.start_serial()
+
+    def clear_chart(self):
+        self.clear_chart = 1
 
     def change_state(self):
         if self.continuePlotting == True:
@@ -162,20 +171,32 @@ class mclass:
         self.fig.canvas.flush_events()
 
         while(self.continuePlotting):
-            value = self.measure()
+            if SIM:
             ## data sim
-            #value = np.random.random()
-            #if (round(time.time() * 1000) - plot_start_time > 15000):
-            #    value *= -10
-            #if (round(time.time() * 1000) - plot_start_time > 10000):
-            #    value *= 10
-            #end of data sim
+                value = np.random.random()
+                if (round(time.time() * 1000) - plot_start_time > 15000):
+                    value *= -10
+                if (round(time.time() * 1000) - plot_start_time > 10000):
+                    value *= 10
+            ##end of data sim
+            else:
+                value = self.measure()
+            if self.clear_chart:
+                self.ax.clear() # clear previous plot !!!!
+                df = pd.DataFrame({'ms': [], 'value': []})
+                self.clear_chart = 0
+
             mytime = round(time.time() * 1000) - plot_start_time
             self.value.config(text=str(value) + " Vrms")
             if DEBUG:
                 print("value measured: " + str(value))
 
             dfn = pd.DataFrame({'ms': [mytime], 'value': [value]})
+
+            # move window
+            if (mytime > WINDOW_TIME):
+                df = df.iloc[1:]
+
             df = pd.concat([df, dfn])
             self.ax.set_xlabel('time, ms', fontsize=20, loc='right')
             self.ax.set_ylabel('level, Vrms', fontsize=20, loc='center')
@@ -183,10 +204,12 @@ class mclass:
             ax = self.fig.get_axes()[0]
             ax.grid(visible=True, which='major', axis='both', color='slategray', linestyle='--', linewidth=0.5)
             ax.tick_params(labeltop=False, labelright=True)
-            ax.plot(df.ms, df.value, color="xkcd:orange")
+            self.ax.clear()
+            self.ax.plot(df.ms, df.value, color="xkcd:orange")
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
-            #time.sleep(REFRESH_TIME)
+            if SIM:
+                time.sleep(REFRESH_TIME)
 
 window = Tk()
 start = mclass(window)
