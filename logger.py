@@ -15,7 +15,7 @@ import serial
 DEBUG = 0 # print debug data on terminal
 WINDOW_TIME = 10000 #in ms
 SIM = 0 # do not interact with equipment, just sim data
-REFRESH_TIME = 0.5 # in seconds. Used only on simulation
+REFRESH_TIME = 0.05 # in seconds. Used only on simulation
 
 class mclass:
     def start_serial(self):
