@@ -13,7 +13,7 @@ import serial
 
 # settings
 DEBUG = 0 # print debug data on terminal
-WINDOW_TIME = 10000 #in ms
+WINDOW_TIME = 10000 #in ms TODO do not move window
 SIM = 0 # do not interact with equipment, just sim data
 REFRESH_TIME = 0.05 # in seconds. Used only on simulation
 
@@ -124,7 +124,7 @@ class mclass:
         self.fig.canvas = FigureCanvasTkAgg(self.fig, master=window)
         np.random.seed(42)
 
-        self.title = Label(window, text='Keithley 2015 - Logger', fg='#1C5AAC', font=('Helvetica 24 bold'))
+        self.title = Label(window, text='Keithley 2015 - Vdc Logger', fg='#1C5AAC', font=('Helvetica 24 bold'))
         self.title.pack(ipady=15, expand=False, side=TOP)
         self.button_start = Button(window, text="START", command=self.change_state, font='Helvetica 18 bold')
         self.button_start.place(x=350, y=85)

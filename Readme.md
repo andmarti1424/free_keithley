@@ -1,5 +1,11 @@
 # free_keithley
-Plotting software for Keithley 2015 THD multimeter
+Plotting / measurement software for Keithley 2015 THD multimeter
+
+## Utilities
+ - THD measurement: total THD/THDN and distortion of each harmonic
+ - Vdc logger
+ - THD vs Freq. : IN DEVELOPMENT
+ - Freq. response plot: IN DEVELOPMENT
 
 ## Requirements
  - `python 3.10+`
@@ -14,13 +20,12 @@ or
 
 ## Screenshots
 ![demo image](screenshots/a2.jpg?raw=true)
-![demo image](screenshots/d.png?raw=true)
 ![demo image](screenshots/c.png?raw=true)
 ![demo image](screenshots/e.png?raw=true)
 ![demo image](screenshots/f.png?raw=true)
 
 ## Donations
-Please support the development of this app by making a DONATION with PayPal.
+Pleeease support the development of this app by making a DONATION with PayPal.
 Every dollar helps a lot!
 
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=U537V8SNQQ45J" target="_blank">

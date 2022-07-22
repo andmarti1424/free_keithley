@@ -1,14 +1,15 @@
 # Some settings
 SIM = 0 # do not interact with equipment, just sim data
-DEBUG = 0 # print debug data on terminal
+DEBUG = 1 # print debug data on terminal
 UPDATE_INTERVAL= 5 # only used on sim.
+
 DEFAULT_QTY_HARM = 4
 DEFAULT_SIGGEN_FREQ = 1000
 DEFAULT_SIGGEN_AMP = 2 # in Vrms
 BOTTOM_DB = -100 # bottom dB in graph
 
 #TODO
-#option to measure output power with Vac
+#add option to calculate output power measuring Vac
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -346,10 +347,10 @@ class mclass:
                 self.data.iloc[2, self.data.columns.get_loc('dB')] = -90
             if self.data.iloc[3, self.data.columns.get_loc('dB')] <= -100:
                 self.data.iloc[3, self.data.columns.get_loc('dB')] = -80
-            #if DEBUG:
-            #    print("---------")
-            #    print(self.data.dB)
-            #    print("---------")
+            if DEBUG:
+                print("---------")
+                print(self.data.dB)
+                print("---------")
             #end of data sim
 
         #now replot
