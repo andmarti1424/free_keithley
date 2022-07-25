@@ -20,7 +20,7 @@ or
 
 ## Screenshots
 ![demo image](screenshots/a3.jpg?raw=true)
-![demo image](screenshots/e2.png?raw=true)
+![demo image](screenshots/e2.jpg?raw=true)
 ![demo image](screenshots/c.png?raw=true)
 ![demo image](screenshots/f.png?raw=true)
 
