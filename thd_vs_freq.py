@@ -1,9 +1,9 @@
 # some config
 SIM = 0
-DEBUG = 0
+DEBUG = 1
+DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_MAXY = 5
-DISPLAY = 0 # display on or off
 DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
 
 #TODO:

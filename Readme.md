@@ -19,9 +19,9 @@ or
 ```python logger.py```
 
 ## Screenshots
-![demo image](screenshots/a2.jpg?raw=true)
+![demo image](screenshots/a3.jpg?raw=true)
+![demo image](screenshots/e2.png?raw=true)
 ![demo image](screenshots/c.png?raw=true)
-![demo image](screenshots/e.png?raw=true)
 ![demo image](screenshots/f.png?raw=true)
 
 ## Donations

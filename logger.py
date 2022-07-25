@@ -1,12 +1,14 @@
 # settings
 SIM = 0 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
+DISPLAY = 1 # display on or off
 WINDOW_TIME = 10000 # in ms
 REFRESH_TIME = 0.05 # in seconds. Used only on simulation
 
 # TODO:
 #add option to void moving window. will make measuring slower over time. Clear button should make it quicker again
 #add option to setup measuring speed: NPLC
+#add option to setup max value in y axis
 #export data measured
 #save plot?
 
@@ -43,7 +45,7 @@ class mclass:
             self.send_cmd(':SENS:FUNC \'VOLT:DC\'')
             self.send_cmd(':SENS:VOLT:DC:RANG 10')             #Use fixed range for fastest readings
             #self.send_cmd(':SENS:VOLT:AC:RANG:AUTO ON')
-            self.send_cmd('DISP:ENAB OFF')
+            if not DISPLAY: self.send_cmd('DISP:ENAB OFF')
             self.send_cmd(':SENS:VOLT:DC:NPLC 0.01')           #Use lowest NPLC setting for highest speed readings
             self.send_cmd(':SYST:AZER:STAT OFF')               #Turn off autozero to increase speed, but may cause drift over time
             self.send_cmd(':SENS:VOLT:DC:AVER:STAT OFF')       #Turn off averaging filter for speed
