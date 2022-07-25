@@ -4,7 +4,7 @@ Plotting / measurement software for Keithley 2015 THD multimeter
 ## Utilities
  - THD measurement: THD/THDN and distortion of each harmonic
  - Vdc logger
- - THD vs Freq. : IN DEVELOPMENT
+ - THD vs Freq.
  - Freq. response plot: IN DEVELOPMENT
 
 ## Requirements

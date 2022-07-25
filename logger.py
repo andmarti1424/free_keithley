@@ -1,7 +1,18 @@
+# settings
+SIM = 0 # do not interact with equipment, just sim data
+DEBUG = 0 # print debug data on terminal
+WINDOW_TIME = 10000 # in ms
+REFRESH_TIME = 0.05 # in seconds. Used only on simulation
+
+# TODO:
+#add option to void moving window. will make measuring slower over time. Clear button should make it quicker again
+#add option to setup measuring speed: NPLC
+#export data measured
+#save plot?
+
 import matplotlib.dates
 import matplotlib.pyplot as plt
 from datetime import datetime
-
 import time
 import numpy as np
 import pandas as pd
@@ -10,12 +21,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 matplotlib.use('TkAgg')
 from tkinter import *
 import serial
-
-# settings
-DEBUG = 0 # print debug data on terminal
-WINDOW_TIME = 10000 #in ms TODO do not move window
-SIM = 0 # do not interact with equipment, just sim data
-REFRESH_TIME = 0.05 # in seconds. Used only on simulation
 
 class mclass:
     def start_serial(self):
@@ -129,11 +134,11 @@ class mclass:
         self.button_start = Button(window, text="START", command=self.change_state, font='Helvetica 18 bold')
         self.button_start.place(x=350, y=85)
         self.button_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18 bold')
-        self.button_quit.place(x=210, y=85)
+        self.button_quit.place(x=150, y=85)
         self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font='Helvetica 18 bold')
         self.button_clear.place(x=490, y=85)
-        self.value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 18 bold'))
-        self.value.place(x=210, y=200)
+        self.value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.value.place(x=150, y=200)
         if not SIM:
             self.start_serial()
 

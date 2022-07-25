@@ -1,18 +1,15 @@
 # Some settings
 SIM = 0 # do not interact with equipment, just sim data
-DEBUG = 1 # print debug data on terminal
-UPDATE_INTERVAL= 5 # only used on sim.
-
-DEFAULT_QTY_HARM = 4
-DEFAULT_SIGGEN_FREQ = 1000
+DEBUG = 0 # print debug data on terminal
+UPDATE_INTERVAL= 1 # only used on sim.
+DEFAULT_QTY_HARM = 4 # default number of harmonics to plot in graph
+DEFAULT_SIGGEN_FREQ = 1000 # in Hz
 DEFAULT_SIGGEN_AMP = 2 # in Vrms
+DEFAULT_DUMMY_RESISTANCE = 8 # in ohms
 BOTTOM_DB = -100 # bottom dB in graph
-
-#TODO
-#add option to calculate output power measuring Vac
+DISPLAY = 1 # display on or off
 
 import matplotlib
-import matplotlib.pyplot as plt
 from matplotlib.widgets import TextBox
 matplotlib.use('TkAgg')
 import numpy as np
@@ -27,13 +24,14 @@ import serial
 import numpy as np #for data sim
 
 class mclass:
-
     def __init__(self,  window):
         self.ser = serial.Serial()
         self.window = window
 
         self.continuePlotting = False
         self.plot_packed = 0 # avoid a re pack when refreshing plot
+        self.fundamental_vrms = float(0) # set some initial value
+
         self.str_measurement_type = StringVar()
         if SIM:
             np.random.seed(42) # for data sim
@@ -54,25 +52,42 @@ class mclass:
         self.str_dB = StringVar()
         self.etr_THD = Entry(window, textvariable=self.str_dB, font='Helvetica 18', width=14, state=DISABLED)
         self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font='Helvetica 18', width=14)
-        self.etr_harm_qty.focus_set()
-        self.etr_harm_qty.icursor(1)
         self.etr_harm_qty.place(x = 245, y = 200)
 
-        self.lbl_SIGGEN = Label(window, text="Use internal SIG GEN", font='Helvetica 18', wraplength=150, justify='left')
-        self.lbl_SIGGEN.place(x = 40, y = 270)
+        self.siggenFrame = LabelFrame(window, text="", height=210, width=520)
+        self.siggenFrame.place(x = 30, y = 270)
+        self.lbl_SIGGEN = Label(self.siggenFrame, text="Use internal SIG-GEN", font='Helvetica 18', wraplength=150, justify='left')
+        self.lbl_SIGGEN.place(x = 10, y = 10)
         self.chk_SIGGEN_var = IntVar()
-        self.chk_SIGGEN = Checkbutton(window, variable=self.chk_SIGGEN_var, onvalue = 1, offvalue = 0, height=1, width = 1, font='Helvetica 22', command=self.internal_SIGGEN_click)
-        self.chk_SIGGEN.place(x = 220, y = 270)
-        self.lbl_SIGGEN_freq = Label(window, text="SIG-GEN frequency", font='Helvetica 18', wraplength=150, justify='left')
-        self.lbl_SIGGEN_hz = Label(window, text="Hz", font='Helvetica 18', wraplength=150, justify='left')
+        self.chk_SIGGEN = Checkbutton(self.siggenFrame, variable=self.chk_SIGGEN_var, onvalue = 1, offvalue = 0, height=1, width = 1, font='Helvetica 22', command=self.internal_SIGGEN_click)
+        self.chk_SIGGEN.select()
+        self.chk_SIGGEN.place(x = 190, y = 10)
+        self.lbl_SIGGEN_freq = Label(self.siggenFrame, text="SIG-GEN frequency", font='Helvetica 18', wraplength=150, justify='left')
+        self.lbl_SIGGEN_hz = Label(self.siggenFrame, text="Hz", font='Helvetica 18', wraplength=150, justify='left')
         self.str_SIGGEN_freq = StringVar()
         self.str_SIGGEN_freq.set(DEFAULT_SIGGEN_FREQ)
-        self.etr_SIGGEN_freq = Entry(window, textvariable=self.str_SIGGEN_freq, font='Helvetica 18', width=14, state=DISABLED)
-        self.lbl_SIGGEN_amp = Label(window, text="SIG-GEN amplitude", font='Helvetica 18', wraplength=150, justify='left')
+        self.etr_SIGGEN_freq = Entry(self.siggenFrame, textvariable=self.str_SIGGEN_freq, font='Helvetica 18', width=14, state=DISABLED)
+        self.lbl_SIGGEN_amp = Label(self.siggenFrame, text="SIG-GEN amplitude", font='Helvetica 18', wraplength=150, justify='left')
         self.str_SIGGEN_amp = StringVar()
         self.str_SIGGEN_amp.set(DEFAULT_SIGGEN_AMP)
-        self.etr_SIGGEN_amp = Entry(window, textvariable=self.str_SIGGEN_amp, font='Helvetica 18', width=14, state=DISABLED)
-        self.lbl_SIGGEN_Vrms = Label(window, text="Vrms", font='Helvetica 18', wraplength=150, justify='left')
+        self.etr_SIGGEN_amp = Entry(self.siggenFrame, textvariable=self.str_SIGGEN_amp, font='Helvetica 18', width=14, state=DISABLED)
+        self.lbl_SIGGEN_Vrms = Label(self.siggenFrame, text="Vrms", font='Helvetica 18', wraplength=150, justify='left')
+        self.internal_SIGGEN_click()
+
+        self.powerFrame = LabelFrame(window, text="", height=180, width=520)
+        self.powerFrame.place(x = 30, y = 700)
+        self.lbl_power = Label(self.powerFrame, text="Calculate power", font='Helvetica 18', wraplength=150, justify='left')
+        self.lbl_power.place(x = 10, y = 10)
+        self.chk_power_var = IntVar()
+        self.chk_power = Checkbutton(self.powerFrame, variable=self.chk_power_var, onvalue = 1, offvalue = 0, height=1, width = 1, font='Helvetica 22', command=self.chk_power_click)
+        self.chk_power.select()
+        self.chk_power.place(x = 190, y = 10)
+        self.lbl_resistance = Label(self.powerFrame, text="dummy load resistance", font='Helvetica 18', wraplength=150, justify='left')
+        self.str_resistance = StringVar()
+        self.str_resistance.set(DEFAULT_DUMMY_RESISTANCE)
+        self.lbl_ohms = Label(self.powerFrame, text="ohms", font='Helvetica 18', wraplength=150, justify='left')
+        self.etr_resistance = Entry(self.powerFrame, textvariable=self.str_resistance, font='Helvetica 18', width=14, state=DISABLED)
+        self.chk_power_click()
 
         # measurement results
         self.lbl_Fundamental = Label(window, text = "Fundamental", font='Helvetica 18')
@@ -88,6 +103,7 @@ class mclass:
         self.etr_vac = Entry(window, textvariable=self.str_vac, font='Helvetica 18', width=14, state=DISABLED)
         self.etr_vac.place(x = 245, y = 540)
         self.str_measurement_type = StringVar()
+
         self.lbl_THD = Label(window, textvariable=self.str_measurement_type, font='Helvetica 18')
         self.lbl_THD.place(x = 40, y = 600)
         self.etr_THD.place(x = 245, y = 580)
@@ -113,15 +129,24 @@ class mclass:
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
-        self.but_quit.place(x=120, y=680)
-
+        self.but_quit.place(x=120, y=980)
         self.but_start = Button(window, text="START", command=self.change_state, font='Helvetica 18')
-        self.but_start.place(x=245, y=680)
+        self.but_start.place(x=245, y=980)
 
         # harmonic details upon click
         self.str_harm_details = StringVar()
         self.lbl_harm_details = Label(window, textvariable=self.str_harm_details, font='Helvetica 18 bold')
-        self.lbl_harm_details.place(x = 40, y = 780)
+        self.lbl_harm_details.place(x = 1080, y = 950)
+
+        # power details
+        self.str_power_calculated = StringVar()
+        self.lbl_power_calculated = Label(window, textvariable=self.str_power_calculated, font='Helvetica 18 bold')
+        self.lbl_power_calculated.place(x = 1280, y = 950)
+
+        #focus
+        self.etr_harm_qty.icursor(1)
+        self.etr_harm_qty.focus_set()
+        #self.but_start.focus_set()
         #END UI
 
     def start_serial(self):
@@ -134,7 +159,7 @@ class mclass:
             self.ser.bytesize=serial.EIGHTBITS
             self.ser.xonxoff=False
             self.ser.open()
-            self.send_cmd('DISP:ENAB OFF')
+            if not DISPLAY: self.send_cmd('DISP:ENAB OFF')
             self.send_cmd('*RST')
             self.send_cmd(':INITiate:CONTinuous OFF;:ABORt')
             self.send_cmd('*OPC?')
@@ -181,15 +206,52 @@ class mclass:
         else:
             return None
 
+    def measure_vca(self):
+        if self.chk_power_var.get() == 0: return
+
+        if not SIM:
+            #TODO TEST: measure Vca in equipment - USE VCA mode
+            #self.send_cmd(':SENS:FUNC \'VOLT:AC\'')
+            #self.send_cmd(':SENS:VOLT:AC:RANG:AUTO ON')
+            #self.send_cmd(':SENS:VOLT:AC:NPLC 0.1') #MEDIUM is 0.1 in AC
+            #self.send_cmd(':SENS:VOLT:AC:DIG 2')
+            #self.send_cmd(':SENS:VOLT:AC:AVER:STAT OFF')
+            #self.send_cmd(':TRIG:COUN 1')
+            #res = self.send_cmd(':READ?')
+
+            #take Vca from previous measurement - USE DIST mode
+            res = format(self.fundamental_vrms, '.3f')
+
+
+            resp = float(res) ** 2 / int(self.str_resistance.get())
+            self.str_power_calculated.set(format(float(res), '.3f') + "Vrms - " + format(resp, '.2f') + "Wrms")
+        else:
+            self.str_power_calculated.set("1.52 Wrms")
+
+
     #enable en setup internal SIG GEN
     def enable_siggen(self):
         if not SIM and self.chk_SIGGEN_var.get() == 1:
+            if DEBUG: print("Setting up internal SIGGEN")
             #self.send_cmd(':SENS:DIST:FREQ:AUTO OFF')
             self.send_cmd(':OUTP:FREQ ' + self.str_SIGGEN_freq.get()) #;set frequency in Hz
             self.send_cmd(':OUTP:IMP HIZ') #;set high impedance source
             self.send_cmd(':OUTP:AMPL ' + self.str_SIGGEN_amp.get()) #;set amplitude in Vrms
             self.send_cmd(':OUTP:CHAN2 ISINE') #;select inverted sine
             self.send_cmd(':OUTP ON') #;turn on source
+
+    def setup_thd_measurement(self):
+        if DEBUG: print("setup THD measurement")
+        if SIM: return
+        self.send_cmd(':SENS:FUNC \'DIST\'')
+        self.send_cmd(':SENS:DIST:TYPE ' + self.rad_values[int(self.rad_var.get())])
+        #TODO
+        #self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
+        self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(DEFAULT_QTY_HARM))
+        self.send_cmd(':UNIT:DIST PERC')
+        self.send_cmd(':SENS:DIST:SFIL NONE')
+        self.send_cmd(':SENS:DIST:RANG:AUTO ON')
+        self.send_cmd(':SENS:DIST:FREQ:AUTO ON')
 
     def measure_thd(self):
         """
@@ -225,40 +287,36 @@ class mclass:
             self.fundamental_vrms = float(new_textVac)
             self.fundamental_freq = new_textHz
         else:
-            self.send_cmd(':SENS:FUNC \'DIST\'')
-            self.send_cmd(':SENS:DIST:TYPE ' + self.rad_values[int(self.rad_var.get())])
-            self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
-            self.send_cmd(':UNIT:DIST PERC')
-            self.send_cmd(':SENS:DIST:SFIL NONE')
-            self.send_cmd(':SENS:DIST:RANG:AUTO ON')
-            self.send_cmd(':SENS:DIST:FREQ:AUTO ON')
+            #self.send_cmd(':SENS:FUNC \'DIST\'')
+            #self.send_cmd(':SENS:DIST:TYPE ' + self.rad_values[int(self.rad_var.get())])
+            #self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
+            #self.send_cmd(':UNIT:DIST PERC')
+            #self.send_cmd(':SENS:DIST:SFIL NONE')
+            #self.send_cmd(':SENS:DIST:RANG:AUTO ON')
+            #self.send_cmd(':SENS:DIST:FREQ:AUTO ON')
 
             # return dist in percent
             res = self.send_cmd(':READ?')
             res = format(float(res), '.6f')
-            if DEBUG:
-                print("% dist: " + res)
+            if DEBUG: print("% dist: " + res)
 
             # return fundamental amplitude in Vrms
             res = self.send_cmd(':SENS:DIST:RMS?')
             self.fundamental_vrms = float(res)
             res = format(self.fundamental_vrms, '.6f')
             self.str_vac.set(res)
-            if DEBUG:
-                print("fundamental amplitude in Vrms: " + res)
+            if DEBUG: print("fundamental amplitude in Vrms: " + res)
 
             # return frequency calculated
             res =  self.send_cmd(':SENS:DIST:FREQ:SET?')
             self.fundamental_freq = format(float(res), '.6f')
             self.str_hz.set(self.fundamental_freq)
-            if DEBUG:
-                print("fundamental freq in Hz: " + self.fundamental_freq)
+            if DEBUG: print("fundamental freq in Hz: " + self.fundamental_freq)
 
             # return THD/THDN %
             self.dist_perc = format(float(self.send_cmd(':SENS:DIST:' + self.rad_values[int(self.rad_var.get())] + '?')), '.6f')
             self.str_perc.set(self.dist_perc)
-            if DEBUG:
-                print("measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_perc + " %")
+            if DEBUG: print("measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_perc + " %")
 
             # return THD/THDN in dB
             self.send_cmd(':UNIT:DIST DB')
@@ -287,6 +345,21 @@ class mclass:
                     #print("harm %d freq: " % h + format(harm_fq, '.6f') + " Hz")
                 self.data = pd.concat([self.data, pd.DataFrame({'harm' : ['h%d' % h], 'dB' : [float(format(harm_mag_db, '.6f'))]})], ignore_index=True)
 
+    def chk_power_click(self):
+        if self.chk_power_var.get() == 0:
+            self.lbl_resistance.place_forget()
+            self.lbl_ohms.place_forget()
+            self.etr_resistance.config(state = 'disabled')
+            self.etr_resistance.place_forget()
+            self.str_power_calculated.set("")
+        else:
+            self.etr_resistance.config(state = 'normal')
+            self.etr_resistance.icursor(len(self.str_resistance.get()))
+            self.etr_resistance.focus_set()
+            self.lbl_resistance.place(x = 10, y = 80)
+            self.lbl_ohms.place(x = 420, y = 80)
+            self.etr_resistance.place(x = 215, y = 80)
+
     def internal_SIGGEN_click(self):
         if self.chk_SIGGEN_var.get() == 0:
             self.etr_SIGGEN_freq.config(state = 'disabled')
@@ -299,15 +372,15 @@ class mclass:
             self.lbl_SIGGEN_Vrms.place_forget()
         else:
             self.etr_SIGGEN_freq.config(state = 'normal')
-            self.lbl_SIGGEN_freq.place(x = 40, y = 350)
-            self.etr_SIGGEN_freq.place(x = 245, y = 350)
+            self.lbl_SIGGEN_freq.place(x = 10, y = 80)
+            self.etr_SIGGEN_freq.place(x = 215, y = 80)
             self.etr_SIGGEN_freq.icursor(len(self.str_SIGGEN_freq.get()))
             self.etr_SIGGEN_freq.focus_set()
             self.etr_SIGGEN_amp.config(state = 'normal')
-            self.lbl_SIGGEN_amp.place(x = 40, y = 430)
-            self.etr_SIGGEN_amp.place(x = 245, y = 430)
-            self.lbl_SIGGEN_hz.place(x = 450, y = 355)
-            self.lbl_SIGGEN_Vrms.place(x = 450, y = 435)
+            self.lbl_SIGGEN_amp.place(x = 10, y = 140)
+            self.etr_SIGGEN_amp.place(x = 215, y = 140)
+            self.lbl_SIGGEN_hz.place(x = 420, y = 80)
+            self.lbl_SIGGEN_Vrms.place(x = 420, y = 140)
 
     def change_measurement_type(self):
         self.str_measurement_type.set(self.rad_values[int(self.rad_var.get())])
@@ -356,7 +429,7 @@ class mclass:
         #now replot
         ax = self.fig.get_axes()[0]
         ax.clear()         # clear axes from previous plot !!!!
-        ax.tick_params(labeltop=False, labelright=True)
+        ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6, picker=True)
         ax.margins(x=0)
         ax.margins(y=0)
@@ -376,30 +449,38 @@ class mclass:
     def change_state(self):
         ## TODO: check here that internal WG freq is valid
         ## TODO: check qty of harm is numberic
+        ## TODO: check ohms is numeric and 4, 8 or 16 ohms
+
         if self.continuePlotting == True:
             self.continuePlotting = False
             self.but_start['text'] = "START"
             self.etr_harm_qty.config(state= "normal")
             self.chk_SIGGEN.config(state = 'normal')
+            self.chk_power.config(state = 'normal')
             self.rad_thd.config(state = 'normal')
             self.rad_thdn.config(state = 'normal')
             self.rad_sinad.config(state = 'normal')
             self.etr_SIGGEN_freq.config(state = 'normal')
             self.etr_SIGGEN_amp.config(state = 'normal')
+            self.etr_resistance.config(state = 'normal')
             self.etr_harm_qty.focus_set()
         else:
+            self.measure_vca()
             self.enable_siggen()
+            self.setup_thd_measurement()
             self.measure_thd()
             self.continuePlotting = True
             if (not self.plot_packed): self.plot()
             self.but_start['text'] = "STOP"
             self.etr_harm_qty.config(state = 'disabled')
             self.chk_SIGGEN.config(state = 'disabled')
+            self.chk_power.config(state = 'disabled')
             self.rad_thd.config(state = 'disabled')
             self.etr_SIGGEN_freq.config(state = 'disabled')
             self.etr_SIGGEN_amp.config(state = 'disabled')
             self.rad_thdn.config(state = 'disabled')
             self.rad_sinad.config(state = 'disabled')
+            self.etr_resistance.config(state = 'disabled')
             self.replot_thread()
 
     def print_harm_details(self, event):
@@ -428,7 +509,7 @@ class mclass:
         if DEBUG:
             print(self.data)
 
-        ax.tick_params(labeltop=False, labelright=True)
+        ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6, picker=True)
         ax.margins(x=0)
         ax.margins(y=0)
@@ -450,22 +531,22 @@ class mclass:
         canvas.draw()
 
     def _replot_thread(self):
-        if DEBUG:
-            print("replot thread running");
+        if DEBUG: print("replot thread running");
+
         while self.continuePlotting:
-            if DEBUG:
-                print("remeasureing THD");
+            if DEBUG: print("calculate power");
+            self.measure_vca()
+
+            if DEBUG: print("remeasuring THD");
             self.measure_thd()
 
-            if DEBUG:
-                print("re plotting")
+            if DEBUG: print("re plotting")
             self.replot()
 
             if SIM:
                 time.sleep(UPDATE_INTERVAL)
 
-        if DEBUG:
-            print("end running replot thread");
+        if DEBUG: print("end running replot thread");
 
     def replot_thread(self):
         self.thread = threading.Thread(target=self._replot_thread)
