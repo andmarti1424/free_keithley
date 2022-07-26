@@ -210,16 +210,16 @@ class mclass:
         if self.chk_power_var.get() == 0: return
 
         if not SIM:
-            #TODO TEST: measure Vca in equipment - USE VCA mode
+            #measure Vca in equipment - with VCA mode
             #self.send_cmd(':SENS:FUNC \'VOLT:AC\'')
             #self.send_cmd(':SENS:VOLT:AC:RANG:AUTO ON')
-            #self.send_cmd(':SENS:VOLT:AC:NPLC 0.1') #MEDIUM is 0.1 in AC
-            #self.send_cmd(':SENS:VOLT:AC:DIG 2')
+            #self.send_cmd(':SENS:VOLT:AC:NPLC 0.1') # FAST is 0.1 in AC. 1 is MED and 10 is SLOW.
+            #self.send_cmd(':SENS:VOLT:AC:DIG 4') # must be 4-7
             #self.send_cmd(':SENS:VOLT:AC:AVER:STAT OFF')
             #self.send_cmd(':TRIG:COUN 1')
             #res = self.send_cmd(':READ?')
 
-            #take Vca from previous measurement - USE DIST mode
+            #take Vca from previous measurement - taken on DIST mode
             res = format(self.fundamental_vrms, '.3f')
 
 
@@ -287,10 +287,11 @@ class mclass:
             self.fundamental_vrms = float(new_textVac)
             self.fundamental_freq = new_textHz
         else:
+            #this was moved to setup_thd_measurement()
             #self.send_cmd(':SENS:FUNC \'DIST\'')
             #self.send_cmd(':SENS:DIST:TYPE ' + self.rad_values[int(self.rad_var.get())])
             #self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
-            #self.send_cmd(':UNIT:DIST PERC')
+            self.send_cmd(':UNIT:DIST PERC')
             #self.send_cmd(':SENS:DIST:SFIL NONE')
             #self.send_cmd(':SENS:DIST:RANG:AUTO ON')
             #self.send_cmd(':SENS:DIST:FREQ:AUTO ON')
@@ -316,7 +317,7 @@ class mclass:
             # return THD/THDN %
             self.dist_perc = format(float(self.send_cmd(':SENS:DIST:' + self.rad_values[int(self.rad_var.get())] + '?')), '.6f')
             self.str_perc.set(self.dist_perc)
-            if DEBUG: print("measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_perc + " %")
+            if DEBUG: print("measured [%] " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_perc + " %")
 
             # return THD/THDN in dB
             self.send_cmd(':UNIT:DIST DB')
@@ -326,7 +327,7 @@ class mclass:
             self.dist_db = format(float(self.send_cmd(':SENS:DIST:' + self.rad_values[int(self.rad_var.get())] + '?')), '.6f')
             if DEBUG:
                 print("dist in dB: " + res)
-                print("measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_db + " dB")
+                print("measured [dB] " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_db + " dB")
 
             # measure each harm
             self.data = pd.DataFrame(columns = ['harm', 'dB'])
@@ -337,6 +338,7 @@ class mclass:
                 harm_mag_db = float(res)
                 harm_perc=pow(10, harm_mag_db/20)*100
                 harm_mag_vrms=harm_perc/100*self.fundamental_vrms
+                #TODO
                 #harm_fq = float(self.send_cmd('SENS:DIST:HARM:FREQ? 02,02'))   #;not valid command?
                 if DEBUG:
                     print("harm %d magnitude: " % h + format(harm_mag_db, '.6f') + " dB")
