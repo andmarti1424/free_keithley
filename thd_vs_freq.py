@@ -1,5 +1,5 @@
 # some config
-SIM = 0
+SIM = 1
 DEBUG = 0
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
@@ -8,7 +8,6 @@ DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 2 # default amplitude for input signal in Vrms
 
 #TODO:
-#add clear plot button
 #handle cursor hover over plot to get details of each freq and its thd
 #export data measured
 #save plot?
@@ -22,6 +21,7 @@ import serial
 import time
 from tkinter import *
 from matplotlib.figure import Figure
+from matplotlib.ticker import AutoMinorLocator
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class mclass:
@@ -106,9 +106,11 @@ class mclass:
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
-        self.but_quit.place(x=120, y=680)
+        self.but_quit.place(x=40, y=680)
         self.but_start = Button(window, text="RUN", command=self.change_state, font='Helvetica 18')
-        self.but_start.place(x=245, y=680)
+        self.but_start.place(x=165, y=680)
+        self.but_clear = Button(window, text="CLEAR", command=self.clear, font='Helvetica 18')
+        self.but_clear.place(x=280, y=680)
         #end of ui
 
         if SIM:
@@ -219,6 +221,11 @@ class mclass:
         self.str_measurement_type.set(self.rad_values[int(self.rad_var.get())])
         self.str_title.set("Keithley 2015 - %s vs Freq. measurement" % self.str_measurement_type.get())
 
+    def clear(self):
+        self.measurement = pd.DataFrame(columns = ['freq', 'thd'])
+        self.plots = 0 # number of plots done. can be up to 4
+        self.plot()
+
     def change_state(self):
         #TODO #int(self.etr_maxy.get()) must be numeric and less than 21
         #TODO #int(self.str_points_decade.get()) must be numeric and less that 30
@@ -244,7 +251,7 @@ class mclass:
                     self.decades_freq = pd.concat([self.decades_freq, pd.DataFrame({'freq' : [x*10**d]})], ignore_index=True)
                     #print(x * (10 ** d))
                     if d == 4 and x == 2: break
-            #print(decades_freq)
+            #print(self.decades_freq)
 
             # now identify each freq for the measurement, based on points per decade
             for i in self.decades_freq.index:
@@ -323,6 +330,7 @@ class mclass:
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
         ax.yaxis.set_ticks(np.arange(0, int(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_ylim([0, int(self.str_maxy.get())])
         c = 'white'
         if self.plots == 1: c = 'salmon'
@@ -344,6 +352,7 @@ class mclass:
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
         ax.yaxis.set_ticks(np.arange(0, int(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_ylim([0, int(self.str_maxy.get())])
         ax.plot(self.measurement['freq'], self.measurement['thd'], color='salmon')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
