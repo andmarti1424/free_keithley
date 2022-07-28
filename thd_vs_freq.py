@@ -1,17 +1,18 @@
 # some config
 SIM = 0
-DEBUG = 1
+DEBUG = 0
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
-DEFAULT_MAXY = 5
+DEFAULT_MAXY = 5 # default max value for Y axis in %
 DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
+DEFAULT_INPUT_SIGNAL_AMPLITUDE = 2 # default amplitude for input signal in Vrms
 
 #TODO:
-#add entry to enter the number of harmonics to use for THD measurement
 #add clear plot button
 #handle cursor hover over plot to get details of each freq and its thd
 #export data measured
 #save plot?
+#add validations of input values. see change_state function
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,12 +30,8 @@ class mclass:
         self.ser = serial.Serial()
         self.window = window
         self.plots = 0 # number of plots done. can be up to 4
+        self.abort = 0
 
-        if SIM:
-            np.random.seed(42) # for data sim
-        else:
-            self.start_serial()
-            self.enable_siggen()
 
         # setup UI
         self.str_title = StringVar()
@@ -57,28 +54,52 @@ class mclass:
         self.lbl_title = Label(window, textvariable=self.str_title, fg='#1C5AAC', font=('Helvetica 24 bold'))
         self.lbl_title.pack(ipady=15, expand=False, side=TOP)
 
-        # y max
-        self.lbl_maxy = Label(window, text="max value in Y axis", font='Helvetica 18')
-        self.lbl_maxy.place(x = 40, y = 203)
-        self.lbl_maxy = Label(window, text="%", font='Helvetica 18')
-        self.lbl_maxy.place(x = 305, y = 203)
-        self.str_maxy = StringVar()
-        self.str_maxy.set(DEFAULT_MAXY)
-        self.etr_maxy = Entry(window, textvariable=self.str_maxy, font='Helvetica 18', width=3)
-        self.etr_maxy.place(x = 260, y = 200)
-        self.etr_maxy.focus_set()
-        self.etr_maxy.icursor(1)
+        # amplitude
+        self.lbl_amplitude = Label(window, text="input signal amplitude", font='Helvetica 18')
+        self.lbl_amplitude.place(x = 40, y = 203)
+        self.str_amplitude = StringVar()
+        self.str_amplitude.set(DEFAULT_INPUT_SIGNAL_AMPLITUDE)
+        self.etr_amplitude = Entry(window, textvariable=self.str_amplitude, font='Helvetica 18', width=3)
+        self.etr_amplitude.place(x = 280, y = 200)
+        self.etr_amplitude.focus_set()
+        self.etr_amplitude.icursor(1)
+        self.lbl_amplitude_vrms = Label(window, text="Vrms", font='Helvetica 18')
+        self.lbl_amplitude_vrms.place(x = 330, y = 203)
 
         # points per decade
         self.lbl_points_decade = Label(window, text="points per decade", font='Helvetica 18')
-        self.lbl_points_decade.place(x = 40, y = 283)
+        self.lbl_points_decade.place(x = 40, y = 263)
         self.str_points_decade = StringVar()
         self.str_points_decade.set(DEFAULT_POINTS_PER_DECADE)
         self.etr_points_decade = Entry(window, textvariable=self.str_points_decade, font='Helvetica 18', width=3)
-        self.etr_points_decade.place(x = 260, y = 280)
-        self.etr_points_decade.focus_set()
+        self.etr_points_decade.place(x = 280, y = 260)
+        #self.etr_points_decade.focus_set()
         self.etr_points_decade.icursor(1)
 
+
+        # number of harmonics
+        self.lbl_harm_qty = Label(window, text="number of harmonics", font='Helvetica 18')
+        self.lbl_harm_qty.place(x = 40, y = 323)
+        self.str_harm_qty = StringVar()
+        self.str_harm_qty.set(DEFAULT_QTY_HARM)
+        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font='Helvetica 18', width=3)
+        self.etr_harm_qty.place(x = 280, y = 320)
+        #self.etr_harm_qty.focus_set()
+        self.etr_harm_qty.icursor(1)
+
+        # y max
+        self.lbl_maxy = Label(window, text="max value in Y axis", font='Helvetica 18')
+        self.lbl_maxy.place(x = 40, y = 383)
+        self.lbl_maxy = Label(window, text="%", font='Helvetica 18')
+        self.lbl_maxy.place(x = 330, y = 383)
+        self.str_maxy = StringVar()
+        self.str_maxy.set(DEFAULT_MAXY)
+        self.etr_maxy = Entry(window, textvariable=self.str_maxy, font='Helvetica 18', width=3)
+        self.etr_maxy.place(x = 280, y = 380)
+        #self.etr_maxy.focus_set()
+        self.etr_maxy.icursor(1)
+
+        #details
         self.str_details = StringVar()
         self.lbl_details = Label(window, textvariable=self.str_details, font='Helvetica 18 bold')
         self.lbl_details.place(x = 40, y = 880)
@@ -86,10 +107,14 @@ class mclass:
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
         self.but_quit.place(x=120, y=680)
-        self.but_start = Button(window, text="START", command=self.change_state, font='Helvetica 18')
+        self.but_start = Button(window, text="RUN", command=self.change_state, font='Helvetica 18')
         self.but_start.place(x=245, y=680)
+        #end of ui
 
-        self.abort = 0
+        if SIM:
+            np.random.seed(42) # for data sim
+        else:
+            self.start_serial()
 
     def start_serial(self):
         try:
@@ -154,14 +179,12 @@ class mclass:
         if not SIM:
             #self.send_cmd(':SENS:DIST:FREQ:AUTO OFF')
             self.send_cmd(':OUTP:IMP HIZ') #;set high impedance source
-            #self.send_cmd(':OUTP:AMPL ' + self.str_SIGGEN_amp.get()) #;set amplitude in Vrms
-            self.send_cmd(':OUTP:AMPL 2') #;set amplitude in Vrms #TODO. set this as config value
+            self.send_cmd(':OUTP:AMPL ' + self.str_amplitude.get()) #;set amplitude in Vrms
             self.send_cmd(':OUTP:CHAN2 ISINE') #;select inverted sine
 
     def set_siggen_freq(self, freq):
         if DEBUG: print("Setting freq to %s" % freq)
         if not SIM:
-            #self.send_cmd(':OUTP:FREQ ' + self.str_SIGGEN_freq.get()) #;set frequency in Hz
             self.send_cmd(':OUTP:FREQ ' + str(freq)) #;set frequency in Hz
             self.send_cmd(':OUTP ON') #;turn on source
 
@@ -170,9 +193,7 @@ class mclass:
         if SIM: return
         self.send_cmd(':SENS:FUNC \'DIST\'')
         self.send_cmd(':SENS:DIST:TYPE ' + self.rad_values[int(self.rad_var.get())].replace("+", ""))
-        #TODO
-        #self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
-        self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(DEFAULT_QTY_HARM))
+        self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
         self.send_cmd(':UNIT:DIST PERC')
         self.send_cmd(':SENS:DIST:SFIL NONE')
         self.send_cmd(':SENS:DIST:RANG:AUTO ON')
@@ -199,17 +220,21 @@ class mclass:
         self.str_title.set("Keithley 2015 - %s vs Freq. measurement" % self.str_measurement_type.get())
 
     def change_state(self):
-        #TODO #int(self.etr_maxy.get()) debe ser numerico y menor a 21
-        #TODO #int(self.str_points_decade.get()) debe ser numerico entero y menor a 11
+        #TODO #int(self.etr_maxy.get()) must be numeric and less than 21
+        #TODO #int(self.str_points_decade.get()) must be numeric and less that 30
+        #TODO str_amplitude must be numeric and less than 10 Vrms
+        #TODO str_harm_qty must be numeric and less than 64
 
         if (self.but_start['text'] == "ABORT"): self.abort = 1
 
-        if (self.but_start['text'] == "START"):
+        if (self.but_start['text'] == "RUN"):
             self.etr_points_decade.config(state = 'disabled')
             self.etr_maxy.config(state = 'disabled')
             self.but_start['text'] = "ABORT"
             self.rad_thd.config(state = 'disabled')
             self.rad_thdn.config(state = 'disabled')
+            self.etr_harm_qty.config(state = 'disabled')
+            self.etr_amplitude.config(state = 'disabled')
 
             #store each decade freq (range)
             self.decades_freq = pd.DataFrame(columns = ['freq'])
@@ -238,18 +263,24 @@ class mclass:
 
             if not self.plots: self.plot()
 
+            # enable siggen
+            self.enable_siggen()
+
             # for each frequency, measure THD, save it in data structure and plot
             self.setup_thd_measurement()
 
             for i in self.measurement.index:
                 if self.abort:
                     self.str_details.set("ABORTED")
-                    self.but_start['text'] = "START"
+                    self.but_start['text'] = "RUN"
                     self.abort = 0
                     self.etr_points_decade.config(state = 'normal')
                     self.etr_maxy.config(state = 'normal')
                     self.rad_thd.config(state = 'normal')
                     self.rad_thdn.config(state = 'normal')
+                    self.etr_harm_qty.config(state = 'normal')
+                    self.etr_amplitude.config(state = 'normal')
+                    self.etr_amplitude.focus_set()
                     return
 
                 if i == self.measurement.size-1: break
@@ -269,12 +300,15 @@ class mclass:
                 #replot
                 self.replot()
             self.plots += 1
-            self.but_start['text'] = "START"
+            self.but_start['text'] = "RUN"
             self.str_details.set("DONE")
             self.etr_points_decade.config(state = 'normal')
             self.etr_maxy.config(state = 'normal')
             self.rad_thd.config(state = 'normal')
             self.rad_thdn.config(state = 'normal')
+            self.etr_harm_qty.config(state = 'normal')
+            self.etr_amplitude.config(state = 'normal')
+            self.etr_amplitude.focus_set()
 
     def replot(self):
         ax = self.fig.get_axes()[0]
@@ -290,9 +324,9 @@ class mclass:
         ax.set_xlim([20, 20000])
         ax.yaxis.set_ticks(np.arange(0, int(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.set_ylim([0, int(self.str_maxy.get())])
-        c = 'salmon'
-        if self.plots == 1: c = 'deepskyblue'
-        if self.plots == 2: c = 'white'
+        c = 'white'
+        if self.plots == 1: c = 'salmon'
+        if self.plots == 2: c = 'deepskyblue'
         if self.plots == 3: c = 'limegreen'
         ax.plot(self.measurement['freq'], self.measurement['thd'], color=c)
         plt.gcf().canvas.draw_idle()

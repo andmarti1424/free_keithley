@@ -1,7 +1,7 @@
 # Some settings
 SIM = 0 # do not interact with equipment, just sim data
+DEBUG = 0 # print debug data on terminal
 DISPLAY = 1 # display on or off
-DEBUG = 1 # print debug data on terminal
 UPDATE_INTERVAL= 1 # only used on sim.
 DEFAULT_QTY_HARM = 4 # default number of harmonics to plot in graph
 DEFAULT_SIGGEN_FREQ = 1000 # in Hz
@@ -28,7 +28,7 @@ class mclass:
         self.ser = serial.Serial()
         self.window = window
 
-        self.continuePlotting = False
+        self.running = False
         self.plot_packed = 0 # avoid a re pack when refreshing plot
         self.fundamental_vrms = float(0) # set some initial value
 
@@ -136,12 +136,12 @@ class mclass:
         # harmonic details upon click
         self.str_harm_details = StringVar()
         self.lbl_harm_details = Label(window, textvariable=self.str_harm_details, font='Helvetica 18 bold')
-        self.lbl_harm_details.place(x = 1080, y = 950)
+        self.lbl_harm_details.place(x = 1080, y = 945)
 
         # power details
         self.str_power_calculated = StringVar()
         self.lbl_power_calculated = Label(window, textvariable=self.str_power_calculated, font='Helvetica 18 bold')
-        self.lbl_power_calculated.place(x = 1280, y = 950)
+        self.lbl_power_calculated.place(x = 1280, y = 945)
 
         #focus
         self.etr_harm_qty.icursor(1)
@@ -396,7 +396,7 @@ class mclass:
     def quit(self):
         if (not SIM and self.ser.isOpen()):
             self.ser.close()
-        if self.continuePlotting == True:
+        if self.running == True:
             self.change_state()
         #self.thread.join()
         Tk().quit()
@@ -453,8 +453,8 @@ class mclass:
         ## TODO: check qty of harm is numberic
         ## TODO: check ohms is numeric and 4, 8 or 16 ohms
 
-        if self.continuePlotting == True:
-            self.continuePlotting = False
+        if self.running == True:
+            self.running = False
             self.but_start['text'] = "START"
             self.etr_harm_qty.config(state= "normal")
             self.chk_SIGGEN.config(state = 'normal')
@@ -471,7 +471,7 @@ class mclass:
             self.enable_siggen()
             self.setup_thd_measurement()
             self.measure_thd()
-            self.continuePlotting = True
+            self.running = True
             if (not self.plot_packed): self.plot()
             self.but_start['text'] = "STOP"
             self.etr_harm_qty.config(state = 'disabled')
@@ -533,9 +533,9 @@ class mclass:
         canvas.draw()
 
     def _replot_thread(self):
-        if DEBUG: print("replot thread running");
+        if DEBUG: print("THD replot thread running");
 
-        while self.continuePlotting:
+        while self.running:
             if DEBUG: print("calculate power");
             self.measure_vca()
 
@@ -548,7 +548,7 @@ class mclass:
             if SIM:
                 time.sleep(UPDATE_INTERVAL)
 
-        if DEBUG: print("end running replot thread");
+        if DEBUG: print("END running THD replot thread");
 
     def replot_thread(self):
         self.thread = threading.Thread(target=self._replot_thread)

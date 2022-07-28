@@ -137,7 +137,7 @@ class mclass:
         self.button_start.place(x=350, y=85)
         self.button_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18 bold')
         self.button_quit.place(x=150, y=85)
-        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font='Helvetica 18 bold')
+        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font='Helvetica 18 bold', state='disabled')
         self.button_clear.place(x=490, y=85)
         self.value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
         self.value.place(x=150, y=200)
@@ -151,10 +151,12 @@ class mclass:
         if self.continuePlotting == True:
             self.continuePlotting = False
             self.button_start['text'] = "START"
+            self.button_clear.config(state = 'disabled')
             self.value.config(text="")
         else:
             self.continuePlotting = True
             self.button_start['text'] = "STOP"
+            self.button_clear.config(state = 'normal')
             self.plot()
 
     def quit(self):
