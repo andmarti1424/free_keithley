@@ -1,5 +1,5 @@
 # some config
-SIM = 1
+SIM = 0
 DEBUG = 0
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
@@ -8,10 +8,10 @@ DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 2 # default amplitude for input signal in Vrms
 
 #TODO:
-#handle cursor hover over plot to get details of each freq and its thd
 #export data measured
 #save plot?
 #add validations of input values. see change_state function
+#test case in which you change points per decade between two different plots
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -99,10 +99,15 @@ class mclass:
         #self.etr_maxy.focus_set()
         self.etr_maxy.icursor(1)
 
-        #details
+        # details - Freq measured
         self.str_details = StringVar()
         self.lbl_details = Label(window, textvariable=self.str_details, font='Helvetica 18 bold')
         self.lbl_details.place(x = 40, y = 880)
+
+        # coordinates
+        self.str_coordinates = StringVar()
+        self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font='Helvetica 18 bold')
+        self.lbl_coordinates.place(x = 440, y = 1000)
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
@@ -141,8 +146,7 @@ class mclass:
                 return -1
 
     def write(self, s, term = '\r'):
-        if DEBUG:
-            print('TX >> ', s)
+        if DEBUG: print('TX >> ', s)
         self.ser.write(str.encode(s))
         if term:
             self.ser.write(b'\r')
@@ -155,8 +159,7 @@ class mclass:
             c = self.ser.read(1)
             if c == b'\r':
                 s = b''.join(buf).decode('ascii')
-                if DEBUG:
-                    print("RX << ", repr(s))
+                if DEBUG: print("RX << ", repr(s))
                 return s.strip()
             else:
                 buf.append(c)
@@ -222,7 +225,7 @@ class mclass:
         self.str_title.set("Keithley 2015 - %s vs Freq. measurement" % self.str_measurement_type.get())
 
     def clear(self):
-        self.measurement = pd.DataFrame(columns = ['freq', 'thd'])
+        self.measurement = pd.DataFrame(columns = ['id', 'freq', 'thd'])
         self.plots = 0 # number of plots done. can be up to 4
         self.plot()
 
@@ -245,7 +248,7 @@ class mclass:
 
             #store each decade freq (range)
             self.decades_freq = pd.DataFrame(columns = ['freq'])
-            self.measurement = pd.DataFrame(columns = ['freq', 'thd'])
+            if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'freq', 'thd'])
             for d in range(1, 5, 1):
                 for x in range(2, 11, 1):
                     self.decades_freq = pd.concat([self.decades_freq, pd.DataFrame({'freq' : [x*10**d]})], ignore_index=True)
@@ -268,15 +271,20 @@ class mclass:
                 self.measurement = pd.concat([self.measurement, pd.DataFrame(points, columns =['freq'])], ignore_index=True).drop_duplicates()
                 #print(self.measurement)
 
+            #fill empty values of id with self.plots
+            self.measurement['id'].fillna(self.plots, inplace=True)
+
             if not self.plots: self.plot()
 
             # enable siggen
             self.enable_siggen()
 
-            # for each frequency, measure THD, save it in data structure and plot
+            # setup equipment for measurement THD
             self.setup_thd_measurement()
 
-            for i in self.measurement.index:
+            # for each frequency, measure THD, save it in data structure and plot
+            sm = self.measurement.loc[(self.measurement['id'] == self.plots)]
+            for i, row in sm.iterrows():
                 if self.abort:
                     self.str_details.set("ABORTED")
                     self.but_start['text'] = "RUN"
@@ -290,22 +298,23 @@ class mclass:
                     self.etr_amplitude.focus_set()
                     return
 
-                if i == self.measurement.size-1: break
-                self.str_details.set("Measuring: " + format(self.measurement['freq'][i], ".2f") + " Hz")
-                if DEBUG: print("Measuring: " , format(self.measurement['freq'][i], ".2f") , " Hz")
+                self.str_details.set("Measuring: " + format(sm['freq'][i], ".2f") + " Hz")
+                #if DEBUG: print("Measuring: " , format(sm['freq'][i], ".2f") , " Hz")
                 self.lbl_details.place(x = 40, y = 880)
                 if SIM:
                     value = 0
-                    if self.measurement['thd'].notnull()[i] and i > 0: value = self.measurement['thd'][i]
+                    if sm['thd'].notnull()[i] and i > 0: value = sm['thd'][i]
                     value = value + np.random.uniform(-0.2, 0.8)
                     if value < 0: value = 0
                 else:
-                    self.set_siggen_freq(self.measurement['freq'][i])
+                    self.set_siggen_freq(sm['freq'][i])
                     value = self.measure_thd()
-                self.measurement['thd'][i] = value
-                #if DEBUG: print(self.measurement['thd'][i])
+
+                cond = (self.measurement['id'] == self.plots) & (self.measurement['freq'] == sm['freq'][i])
+                self.measurement.loc[cond, 'thd'] = value
                 #replot
                 self.replot()
+            #self.replot()
             self.plots += 1
             self.but_start['text'] = "RUN"
             self.str_details.set("DONE")
@@ -316,8 +325,10 @@ class mclass:
             self.etr_harm_qty.config(state = 'normal')
             self.etr_amplitude.config(state = 'normal')
             self.etr_amplitude.focus_set()
+            if DEBUG: print("DONE")
 
     def replot(self):
+        self.fig.tight_layout()
         ax = self.fig.get_axes()[0]
         #ax.clear()         # clear axes from previous plot !!!!
         plt.rcParams['toolbar'] = 'None'
@@ -329,19 +340,25 @@ class mclass:
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.5)
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
-        ax.yaxis.set_ticks(np.arange(0, int(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.set_ylim([0, int(self.str_maxy.get())])
-        c = 'white'
-        if self.plots == 1: c = 'salmon'
-        if self.plots == 2: c = 'deepskyblue'
-        if self.plots == 3: c = 'limegreen'
-        ax.plot(self.measurement['freq'], self.measurement['thd'], color=c)
+        ax.set_ylim([0, float(self.str_maxy.get())])
+        for id in self.measurement['id'].unique():
+            if id < self.plots: continue
+            cond = (self.measurement['id'] == id)
+            df = self.measurement.loc[cond]
+            c = 'white'
+            if id == 1: c = 'salmon'
+            if id == 2: c = 'deepskyblue'
+            if id == 3: c = 'limegreen'
+            ax.plot(df['freq'], df['thd'], color=c)
         plt.gcf().canvas.draw_idle()
         plt.gcf().canvas.start_event_loop(0.05)
+        plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
     def plot(self):
         self.fig, ax = plt.subplots(figsize=(14, 9))
+        self.fig.tight_layout()
         #plt.rcParams['toolbar'] = 'None'
         ax.tick_params(labeltop=False, labelright=True,  labelsize=16)
         ax.set(xscale="log")
@@ -351,13 +368,35 @@ class mclass:
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.5)
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
-        ax.yaxis.set_ticks(np.arange(0, int(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.set_ylim([0, int(self.str_maxy.get())])
-        ax.plot(self.measurement['freq'], self.measurement['thd'], color='salmon')
+        ax.set_ylim([0, float(self.str_maxy.get())])
+        ax.plot(self.measurement['freq'], self.measurement['thd'], color='white')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().place(relx=.6, rely=.5, anchor="c")
         canvas.draw()
+        canvas.start_event_loop(0.05)
+        canvas.mpl_connect('motion_notify_event', self.motion_hover)
+
+    def motion_hover(self, event):
+        if self.measurement.empty: return
+        if self.but_start['text'] == "ABORT": return
+        if event.inaxes is not None:
+            df = self.measurement
+            df['freq'] = df['freq'].astype('float')
+            df['freq'] = df['freq'].apply(lambda x: round(x, 2))
+            x = event.xdata
+            y = format(event.ydata, '.2f')
+            freq = df.iloc[(df['freq']-x).abs().argsort()[:1]]['freq'].tolist()[0]
+
+            #show coordinates of cursor
+            #self.str_coordinates.set("found %s %s" % (x, y))
+
+            self.str_coordinates.set("freq. %s Hz" % freq)
+            for i, r in (df.loc[(df['freq'] == freq)]).iterrows():
+                self.str_coordinates.set(self.str_coordinates.get() + " - %s %% THD" % format(r['thd'], '.2f'))
+
+            self.str_coordinates.set(self.str_coordinates.get() + "\n (%s, %s)" % (format(event.xdata, '.2f'),y))
 
 window = Tk()
 start = mclass(window)
