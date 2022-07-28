@@ -1,5 +1,5 @@
 # settings
-SIM = 0 # do not interact with equipment, just sim data
+SIM = 1 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
 DISPLAY = 1 # display on or off
 WINDOW_TIME = 10000 # in ms
@@ -23,6 +23,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 matplotlib.use('TkAgg')
 from tkinter import *
 import serial
+#from matplotlib.ticker import AutoMinorLocator, FormatStrFormatter
 
 class mclass:
     def start_serial(self):
@@ -172,6 +173,11 @@ class mclass:
 
         self.ax.clear() # clear previous plot !!!!
         self.ax.tick_params(labeltop=False, labelright=True)
+
+        #format y axis
+        #ax.yaxis.set_minor_locator(AutoMinorLocator())
+        #ax.yaxis.set_minor_formatter(FormatStrFormatter("%.3f"))
+
         self.ax.plot(df.ms, df.value)
         if not self.plot_packed:
             self.fig.canvas.get_tk_widget().pack(side=BOTTOM, expand=0)
@@ -196,7 +202,7 @@ class mclass:
                 self.clear_chart = 0
 
             mytime = round(time.time() * 1000) - plot_start_time
-            self.value.config(text=str(value) + " Vrms")
+            self.value.config(text=format(value, '.6f') + " Vrms")
             if DEBUG:
                 print("value measured: " + str(value))
 

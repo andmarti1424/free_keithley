@@ -1,5 +1,5 @@
 # some config
-SIM = 0
+SIM = 1
 DEBUG = 0
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
@@ -222,7 +222,7 @@ class mclass:
 
     def change_measurement_type(self):
         self.str_measurement_type.set(self.rad_values[int(self.rad_var.get())])
-        self.str_title.set("Keithley 2015 - %s vs Freq. measurement" % self.str_measurement_type.get())
+        #self.str_title.set("Keithley 2015 - %s vs Freq. measurement" % self.str_measurement_type.get())
 
     def clear(self):
         self.measurement = pd.DataFrame(columns = ['id', 'freq', 'thd'])
@@ -331,18 +331,20 @@ class mclass:
         self.fig.tight_layout()
         ax = self.fig.get_axes()[0]
         #ax.clear()         # clear axes from previous plot !!!!
-        plt.rcParams['toolbar'] = 'None'
-        ax.tick_params(labeltop=False, labelright=True,  labelsize=16)
-        ax.set(xscale="log")
-        ax.set_facecolor('xkcd:black')
-        ax.set_xlabel('frequency, Hz', fontsize=20, loc='center')
-        ax.set_ylabel('%s, %%' % self.str_measurement_type.get(), fontsize=20, loc='center')
-        ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.5)
-        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
-        ax.set_xlim([20, 20000])
-        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.set_ylim([0, float(self.str_maxy.get())])
+        #plt.rcParams['toolbar'] = 'None'
+        #ax.tick_params(labeltop=False, labelright=True, labelsize=14)
+        #ax.set(xscale="log")
+        #ax.set_facecolor('xkcd:black')
+        #ax.set_xlabel('frequency, Hz', fontsize=20, loc='center')
+        #ax.set_ylabel('%s, %%' % self.str_measurement_type.get(), fontsize=20, loc='center')
+        #ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
+        #ax.minorticks_on()
+        #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
+        #ax.set_xlim([20, 20000])
+        #ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20, visible=True) # la escala del eje Y cada 0.5 entre 0 y 5
+        #ax.yaxis.set_minor_locator(AutoMinorLocator())
+        #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
+        #ax.set_ylim([0, float(self.str_maxy.get())])
         for id in self.measurement['id'].unique():
             if id < self.plots: continue
             cond = (self.measurement['id'] == id)
@@ -353,27 +355,28 @@ class mclass:
             if id == 3: c = 'limegreen'
             ax.plot(df['freq'], df['thd'], color=c)
         plt.gcf().canvas.draw_idle()
-        plt.gcf().canvas.start_event_loop(0.05)
-        plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
+        plt.gcf().canvas.start_event_loop(0.0001)
+        #plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
     def plot(self):
         self.fig, ax = plt.subplots(figsize=(14, 9))
         self.fig.tight_layout()
-        #plt.rcParams['toolbar'] = 'None'
-        ax.tick_params(labeltop=False, labelright=True,  labelsize=16)
+        plt.rcParams['toolbar'] = 'None'
+        ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.set(xscale="log")
         ax.set_facecolor('xkcd:black')
         ax.set_xlabel('frequency, Hz', fontsize=20, loc='center')
         ax.set_ylabel('%s, %%' % self.str_measurement_type.get(), fontsize=20, loc='center')
-        ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.5)
+        ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
-        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=12) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([0, float(self.str_maxy.get())])
         ax.plot(self.measurement['freq'], self.measurement['thd'], color='white')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
-        canvas.get_tk_widget().place(relx=.6, rely=.5, anchor="c")
+        canvas.get_tk_widget().place(relx=.6, rely=.48, anchor="c")
         canvas.draw()
         canvas.start_event_loop(0.05)
         canvas.mpl_connect('motion_notify_event', self.motion_hover)
