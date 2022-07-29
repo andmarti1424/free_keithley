@@ -6,7 +6,7 @@ Plotting / measurement software for Keithley 2015 THD multimeter
  - Vdc logger
  - THD vs Freq.
  - Freq. response plot
- - THD vs Power: PLANNED
+ - THD vs Power: WIP
 
 ## Requirements
  - `python 3.10+`
@@ -24,6 +24,7 @@ or
 ![demo image](screenshots/thdf.jpg?raw=true)
 ![demo image](screenshots/logger.jpg?raw=true)
 ![demo image](screenshots/freq_resp.jpg?raw=true)
+![demo image](screenshots/thdp?raw=true)
 
 ## Donations
 Pleeease support the development of this app by making a DONATION with PayPal.
