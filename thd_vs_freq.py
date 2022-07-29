@@ -332,19 +332,19 @@ class mclass:
         ax = self.fig.get_axes()[0]
         #ax.clear()         # clear axes from previous plot !!!!
         #plt.rcParams['toolbar'] = 'None'
-        #ax.tick_params(labeltop=False, labelright=True, labelsize=14)
+        ax.tick_params(labeltop=False, labelright=True, labelsize=14)
         #ax.set(xscale="log")
         #ax.set_facecolor('xkcd:black')
         #ax.set_xlabel('frequency, Hz', fontsize=20, loc='center')
-        #ax.set_ylabel('%s, %%' % self.str_measurement_type.get(), fontsize=20, loc='center')
+        ax.set_ylabel('%s, %%' % self.str_measurement_type.get(), fontsize=20, loc='center')
         #ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         #ax.minorticks_on()
         #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         #ax.set_xlim([20, 20000])
-        #ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20, visible=True) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20, visible=True) # la escala del eje Y cada 0.5 entre 0 y 5
         #ax.yaxis.set_minor_locator(AutoMinorLocator())
         #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
-        #ax.set_ylim([0, float(self.str_maxy.get())])
+        ax.set_ylim([0, float(self.str_maxy.get())])
         for id in self.measurement['id'].unique():
             if id < self.plots: continue
             cond = (self.measurement['id'] == id)
