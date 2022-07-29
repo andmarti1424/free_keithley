@@ -24,7 +24,7 @@ or
 ![demo image](screenshots/thdf.jpg?raw=true)
 ![demo image](screenshots/logger.jpg?raw=true)
 ![demo image](screenshots/freq_resp.jpg?raw=true)
-![demo image](screenshots/thdp?raw=true)
+![demo image](screenshots/thdp.jpg?raw=true)
 
 ## Donations
 Pleeease support the development of this app by making a DONATION with PayPal.
