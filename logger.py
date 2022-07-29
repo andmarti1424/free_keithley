@@ -1,5 +1,5 @@
 # settings
-SIM = 1 # do not interact with equipment, just sim data
+SIM = 0 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
 DISPLAY = 1 # display on or off
 WINDOW_TIME = 10000 # in ms

@@ -5,7 +5,7 @@ Plotting / measurement software for Keithley 2015 THD multimeter
  - THD measurement: THD/THDN and distortion of each harmonic
  - Vdc logger
  - THD vs Freq.
- - Freq. response plot: IN DEVELOPMENT
+ - Freq. response plot
  - THD vs Power: PLANNED
 
 ## Requirements
@@ -23,7 +23,7 @@ or
 ![demo image](screenshots/a3.jpg?raw=true)
 ![demo image](screenshots/thdf.jpg?raw=true)
 ![demo image](screenshots/logger.jpg?raw=true)
-![demo image](screenshots/f.png?raw=true)
+![demo image](screenshots/freq_resp.jpg?raw=true)
 
 ## Donations
 Pleeease support the development of this app by making a DONATION with PayPal.
