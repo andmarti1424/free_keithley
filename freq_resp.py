@@ -22,6 +22,11 @@ from scipy import signal
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
+#TODO]
+#test with eq
+#multiple plots
+#hover
+
 class mclass:
 
     def __init__(self,  window):

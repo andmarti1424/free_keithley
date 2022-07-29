@@ -22,7 +22,7 @@ or
 ## Screenshots
 ![demo image](screenshots/a3.jpg?raw=true)
 ![demo image](screenshots/thdf.jpg?raw=true)
-![demo image](screenshots/c.png?raw=true)
+![demo image](screenshots/logger.jpg?raw=true)
 ![demo image](screenshots/f.png?raw=true)
 
 ## Donations

@@ -6,8 +6,9 @@ WINDOW_TIME = 10000 # in ms
 REFRESH_TIME = 0.05 # in seconds. Used only on simulation
 
 # TODO:
-#add option to void moving window. will make measuring slower over time. Clear button should make it quicker again
-#add option to setup measuring speed: NPLC
+#add check to avoid moving window. will make measuring slower over time. Clear button should make it quicker again.
+#clear button
+#add combo to setup measuring speed: NPLC
 #add option to setup max value in y axis
 #export data measured
 #save plot?
@@ -23,9 +24,49 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 matplotlib.use('TkAgg')
 from tkinter import *
 import serial
-#from matplotlib.ticker import AutoMinorLocator, FormatStrFormatter
+from matplotlib.ticker import AutoMinorLocator
+#, FormatStrFormatter
 
 class mclass:
+    def __init__(self,  window):
+        self.ser = serial.Serial()
+        self.window = window
+        self.continuePlotting = False
+        self.plot_packed = False
+        self.fig = Figure(figsize=(9,9))
+        self.ax = self.fig.add_subplot(111)
+        self.fig.canvas = FigureCanvasTkAgg(self.fig, master=window)
+        np.random.seed(42)
+
+        self.title = Label(window, text='Keithley 2015 - Vdc Logger', fg='#1C5AAC', font=('Helvetica 24 bold'))
+        self.title.pack(ipady=15, expand=False, side=TOP)
+
+        #details
+        self.value = Label(window, text='', fg="red", font=('Helvetica 16 bold'))
+        self.value.place(x=150, y=200)
+        self.readings = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.readings.place(x=150, y=240)
+        self.max_value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.max_value.place(x=150, y=280)
+        self.min_value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.min_value.place(x=150, y=320)
+        self.avg_value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.avg_value.place(x=150, y=360)
+        self.std_value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.std_value.place(x=150, y=400)
+
+        #BUTTONS
+        self.button_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18 bold')
+        self.button_quit.place(x=40, y=680)
+        self.button_start = Button(window, text="START", command=self.change_state, font='Helvetica 18 bold')
+        self.button_start.place(x=165, y=680)
+        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font='Helvetica 18 bold', state='disabled')
+        self.button_clear.place(x=310, y=680)
+        #end of ui
+
+        if not SIM:
+            self.start_serial()
+
     def start_serial(self):
         try:
             self.ser.port='/dev/ttyUSB0'
@@ -122,29 +163,6 @@ class mclass:
             print(res)
         return res
 
-    def __init__(self,  window):
-        self.ser = serial.Serial()
-        self.window = window
-        self.continuePlotting = False
-        self.plot_packed = False
-        self.fig = Figure(figsize=(9,9))
-        self.ax = self.fig.add_subplot(111)
-        self.fig.canvas = FigureCanvasTkAgg(self.fig, master=window)
-        np.random.seed(42)
-
-        self.title = Label(window, text='Keithley 2015 - Vdc Logger', fg='#1C5AAC', font=('Helvetica 24 bold'))
-        self.title.pack(ipady=15, expand=False, side=TOP)
-        self.button_start = Button(window, text="START", command=self.change_state, font='Helvetica 18 bold')
-        self.button_start.place(x=350, y=85)
-        self.button_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18 bold')
-        self.button_quit.place(x=150, y=85)
-        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font='Helvetica 18 bold', state='disabled')
-        self.button_clear.place(x=490, y=85)
-        self.value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
-        self.value.place(x=150, y=200)
-        if not SIM:
-            self.start_serial()
-
     def clear_chart(self):
         self.clear_chart = 1
 
@@ -153,10 +171,15 @@ class mclass:
             self.continuePlotting = False
             self.button_start['text'] = "START"
             self.button_clear.config(state = 'disabled')
-            self.value.config(text="")
+            #self.value.config(text="")
+            #self.max_value.config(text="")
+            #self.min_value.config(text="")
+            #self.avg_value.config(text="")
+            #self.std_value.config(text="")
+            #self.readings.config(text="")
         else:
             self.continuePlotting = True
-            self.button_start['text'] = "STOP"
+            self.button_start['text'] = "STOP "
             self.button_clear.config(state = 'normal')
             self.plot()
 
@@ -180,7 +203,7 @@ class mclass:
 
         self.ax.plot(df.ms, df.value)
         if not self.plot_packed:
-            self.fig.canvas.get_tk_widget().pack(side=BOTTOM, expand=0)
+            self.fig.canvas.get_tk_widget().pack(side=TOP, expand=0)
         self.plot_packed = 1
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
@@ -196,6 +219,7 @@ class mclass:
             ##end of data sim
             else:
                 value = self.measure()
+
             if self.clear_chart:
                 self.ax.clear() # clear previous plot !!!!
                 df = pd.DataFrame({'ms': [], 'value': []})
@@ -203,28 +227,37 @@ class mclass:
 
             mytime = round(time.time() * 1000) - plot_start_time
             self.value.config(text=format(value, '.6f') + " Vrms")
-            if DEBUG:
-                print("value measured: " + str(value))
+            if DEBUG: print("value measured: " + str(value))
 
+            df_graph = df
             dfn = pd.DataFrame({'ms': [mytime], 'value': [value]})
 
             # move window
-            if (mytime > WINDOW_TIME):
-                df = df.iloc[1:]
+            if (mytime > WINDOW_TIME): df_graph = df_graph.iloc[1:]
 
             df = pd.concat([df, dfn])
+            df_graph = pd.concat([df_graph, dfn])
+
+
+            self.readings.config(text="readings: %d" % df.size)
+            self.max_value.config(text="max: %s Vrms" % format(df['value'].max(), '.6f'))
+            self.min_value.config(text="min: %s Vrms" % format(df['value'].min(), '.6f'))
+            self.avg_value.config(text="avg: %s Vrms" % format(df['value'].mean(), '.6f'))
+            self.std_value.config(text="std: %s Vrms" % format(df['value'].std(), '.6f'))
+
             self.ax.set_xlabel('time, ms', fontsize=20, loc='right')
             self.ax.set_ylabel('level, Vrms', fontsize=20, loc='center')
             self.ax.set_facecolor('xkcd:black')
             ax = self.fig.get_axes()[0]
-            ax.grid(visible=True, which='major', axis='both', color='slategray', linestyle='--', linewidth=0.5)
+            #ax.grid(visible=True, which='major', axis='both', color='slategray', linestyle='--', linewidth=0.5)
+            ax.grid(visible=True, which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
             ax.tick_params(labeltop=False, labelright=True)
-            self.ax.clear()
+            ax.yaxis.set_minor_locator(AutoMinorLocator())
+            #self.ax.clear()
             self.ax.plot(df.ms, df.value, color="xkcd:orange")
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
-            if SIM:
-                time.sleep(REFRESH_TIME)
+            if SIM: time.sleep(REFRESH_TIME)
 
 window = Tk()
 start = mclass(window)
