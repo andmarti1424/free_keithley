@@ -12,7 +12,6 @@ DEFAULT_MAXY = 5 # default max value for Y axis in %
 DEFAULT_FREQ = 1000
 
 #TODO:
-#TEST measurement with equipment
 #add validations of user input
 #add protection (max THD value)
 
@@ -215,13 +214,13 @@ class mclass:
         if SIM: return
         #self.send_cmd(':SENS:DIST:FREQ:AUTO OFF')
         self.send_cmd(':OUTP:IMP HIZ') # set high impedance source
-        self.send_cmd(':OUTP:FREQ ' + int(self.freq.get())) # set frequency in Hz
+        self.send_cmd(':OUTP:FREQ ' + self.str_freq.get()) # set frequency in Hz
         self.send_cmd(':OUTP:CHAN2 ISINE') # select inverted sine
 
     def set_siggen_amp(self, amp):
         if DEBUG: print("Setting SIGGEN amplitude to %s" % amp)
         if not SIM:
-            self.send_cmd(':OUTP:AMP ' + amp) #;set amplitude in Vrms
+            self.send_cmd(':OUTP:AMPL ' + str(amp)) #;set amplitude in Vrms
             self.send_cmd(':OUTP ON') #;turn on source
 
     def setup_thd_measurement(self):
@@ -342,7 +341,7 @@ class mclass:
 
                     #get vout in Vrms
                     vout = self.send_cmd(':SENS:DIST:RMS?')
-                    vout = format(float(vout), '.6f')
+                    vout = float(format(float(vout), '.6f'))
 
                 # save measured data
                 cond = (self.measurement['id'] == self.plots) & (self.measurement['vin'] == sm['vin'][vin])

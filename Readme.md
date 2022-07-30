@@ -6,7 +6,7 @@ Plotting / measurement software for Keithley 2015 THD multimeter
  - Vdc logger
  - THD vs Freq.
  - Freq. response plot
- - THD vs Power: WIP
+ - THD vs Power
 
 ## Requirements
  - `python 3.10+`
