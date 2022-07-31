@@ -35,6 +35,7 @@ class mclass:
         self.abort = 0
 
         # setup UI
+        self.colors=['white', 'salmon', 'deepskyblue', 'limegreen']
         self.str_title = StringVar()
 
         # TYPE OF MEASUREMENT radio button
@@ -132,12 +133,12 @@ class mclass:
         # details - input sweep
         self.str_details = StringVar()
         self.lbl_details = Label(window, textvariable=self.str_details, font='Helvetica 18 bold')
-        self.lbl_details.place(x = 40, y = 880)
+        self.lbl_details.place(x = 40, y = 1000)
 
         # coordinates
         self.str_coordinates = StringVar()
         self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font='Helvetica 18 bold')
-        self.lbl_coordinates.place(x = 410, y = 1000)
+        self.lbl_coordinates.place(x = 710, y = 1000)
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
@@ -262,6 +263,10 @@ class mclass:
     def change_state(self):
         if (self.but_start['text'] == "ABORT"): self.abort = 1
 
+        if (self.plots == 4):
+            self.str_details.set("Please clear plot before making a new measurement")
+            return
+
         if (self.but_start['text'] == "RUN"):
             self.etr_load_impedance.config(state = 'disabled')
             self.etr_vin_min.config(state = 'disabled')
@@ -273,6 +278,8 @@ class mclass:
             self.rad_thd.config(state = 'disabled')
             self.rad_thdn.config(state = 'disabled')
             self.but_start['text'] = "ABORT"
+            self.but_quit.config(state = 'disabled')
+            self.but_clear.config(state = 'disabled')
 
             # create data structure
             if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'vin', 'vout', 'thd', 'impedance'])
@@ -310,6 +317,12 @@ class mclass:
             sm = self.measurement.loc[(self.measurement['id'] == self.plots)]
             for vin, row in sm.iterrows():
                 if self.abort:
+                    # remove points from aborted measurements
+                    cond = (self.measurement['id'] == self.plots)
+                    self.measurement.loc[cond, 'vin'] = float(0)
+                    self.measurement.loc[cond, 'thd'] = float(0)
+                    self.measurement.loc[cond, 'vout'] = float(0)
+                    #print(self.measurement)
                     self.str_details.set("ABORTED")
                     self.but_start['text'] = "RUN"
                     self.abort = 0
@@ -322,6 +335,8 @@ class mclass:
                     self.rad_thd.config(state = 'normal')
                     self.rad_thdn.config(state = 'normal')
                     self.etr_freq.config(state = 'normal')
+                    self.but_quit.config(state = 'normal')
+                    self.but_clear.config(state = 'normal')
                     return
 
                 self.str_details.set("Measuring THD at " + format(sm['vin'][vin], ".4f") + " Vrms input")
@@ -329,7 +344,7 @@ class mclass:
 
                 if SIM:
                     value = 0.4
-                    if sm['thd'].notnull()[vin] and i > 0: value = sm['thd'][vin]
+                    if sm['thd'].notnull()[vin] and vin > 0: value = sm['thd'][vin]
                     value = value + np.random.uniform(-0.2, 0.8)
                     if value < 0: value = 0.4
                     vout = (sm['vin'][vin] * 2.5) ** 2
@@ -366,6 +381,8 @@ class mclass:
             self.etr_harm_qty.config(state = 'normal')
             self.etr_maxy.config(state = 'normal')
             self.etr_freq.config(state = 'normal')
+            self.but_quit.config(state = 'normal')
+            self.but_clear.config(state = 'normal')
 
             if DEBUG: print("DONE")
 
@@ -388,15 +405,19 @@ class mclass:
 #        #ax.yaxis.set_minor_locator(AutoMinorLocator())
 #        #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([0, float(self.str_maxy.get())])
+
         for id in self.measurement['id'].unique():
             if id < self.plots: continue
             cond = (self.measurement['id'] == id)
             df = self.measurement.loc[cond]
-            c = 'white'
-            if id == 1: c = 'salmon'
-            if id == 2: c = 'deepskyblue'
-            if id == 3: c = 'limegreen'
-            ax.plot(df['vout'] ** 2 / df['impedance'], df['thd'], color=c)
+            ax.plot(df['vout'] ** 2 / df['impedance'], df['thd'], color=self.colors[int(id)])
+
+        # set legend color
+        ax.legend(self.measurement['id'].astype('int').unique())
+        leg = ax.get_legend()
+        for i, j in enumerate(leg.legendHandles):
+            j.set_color(self.colors[i])
+
         plt.gcf().canvas.draw_idle()
         plt.gcf().canvas.start_event_loop(0.01)
         plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
@@ -419,7 +440,14 @@ class mclass:
         #ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([0, float(self.str_maxy.get())])
-        ax.plot(self.measurement['vout'] ** 2 / self.measurement['impedance'], self.measurement['thd'], color='white')
+        ax.plot(self.measurement['vout'] ** 2 / self.measurement['impedance'], self.measurement['thd'], color=self.colors[0])
+
+        # set legend color
+        ax.legend(self.measurement['id'].astype('int').unique())
+        leg = ax.get_legend()
+        for i, j in enumerate(leg.legendHandles):
+            j.set_color(self.colors[i])
+
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().place(relx=.65, rely=.48, anchor="c")
         canvas.draw()

@@ -1,6 +1,6 @@
 # some config
-SIM = 0
-DEBUG = 0
+SIM = 1
+DEBUG = 1
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1 # default amplitude for input signal in Vrms
@@ -35,6 +35,7 @@ class mclass:
         self.abort = 0
 
         # setup UI
+        self.colors=['white', 'salmon', 'deepskyblue', 'limegreen']
         self.str_title = StringVar()
 
         # title
@@ -89,7 +90,7 @@ class mclass:
         self.etr_miny.icursor(1)
 
         # y steps
-        self.lbl_ysteps = Label(window, text="steps in Y axis", font='Helvetica 18')
+        self.lbl_ysteps = Label(window, text="Y axis interval", font='Helvetica 18')
         self.lbl_ysteps.place(x = 40, y = 443)
         self.str_ysteps = StringVar()
         self.str_ysteps.set(DEFAULT_YSTEPS)
@@ -101,12 +102,12 @@ class mclass:
         # details - Freq measured
         self.str_details = StringVar()
         self.lbl_details = Label(window, textvariable=self.str_details, font='Helvetica 18 bold')
-        self.lbl_details.place(x = 40, y = 880)
+        self.lbl_details.place(x = 40, y = 1000)
 
         # coordinates
         self.str_coordinates = StringVar()
         self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font='Helvetica 18 bold')
-        self.lbl_coordinates.place(x = 740, y = 900)
+        self.lbl_coordinates.place(x = 710, y = 1000)
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
@@ -209,7 +210,7 @@ class mclass:
         self.send_cmd(':SENS:FUNC \'VOLT:AC\'')
         self.send_cmd(':SENS:VOLT:AC:RANG:AUTO ON')
         self.send_cmd(':SENS:VOLT:AC:DIG 7') # must be 4-7
-        #FIXME
+        #self.send_cmd(':SENS:VOLT:AC:DET:BAND 300') # 300Hz-300kHz
         #self.send_cmd(':SENS:VOLT:AC:NPLC 1') # FAST is 0.1 in AC. 1 is MED and 10 is SLOW.
         self.send_cmd(':SENS:VOLT:AC:AVER:STAT OFF')
 
@@ -222,6 +223,10 @@ class mclass:
     def change_state(self):
         if (self.but_start['text'] == "ABORT"): self.abort = 1
 
+        if (self.plots == 4):
+            self.str_details.set("Please clear plot before making a new measurement")
+            return
+
         if (self.but_start['text'] == "RUN"):
             self.etr_amplitude.config(state = 'disabled')
             self.etr_ysteps.config(state = 'disabled')
@@ -229,6 +234,8 @@ class mclass:
             self.etr_maxy.config(state = 'disabled')
             self.etr_points_decade.config(state = 'disabled')
             self.but_start['text'] = "ABORT"
+            self.but_quit.config(state = 'disabled')
+            self.but_clear.config(state = 'disabled')
 
             #store each decade freq (range)
             self.decades_freq = pd.DataFrame(columns = ['freq'])
@@ -270,6 +277,10 @@ class mclass:
             sm = self.measurement.loc[(self.measurement['id'] == self.plots)]
             for i, row in sm.iterrows():
                 if self.abort:
+                    # remove points from aborted measurements
+                    cond = (self.measurement['id'] == self.plots)
+                    self.measurement.loc[cond, 'vca'] = float(0)
+
                     self.str_details.set("ABORTED")
                     self.but_start['text'] = "RUN"
                     self.abort = 0
@@ -279,6 +290,8 @@ class mclass:
                     self.etr_maxy.config(state = 'normal')
                     self.etr_points_decade.config(state = 'normal')
                     self.etr_amplitude.focus_set()
+                    self.but_quit.config(state = 'normal')
+                    self.but_clear.config(state = 'normal')
                     return
 
                 self.str_details.set("Measuring: " + format(sm['freq'][i], ".2f") + " Hz")
@@ -313,8 +326,12 @@ class mclass:
         self.etr_miny.config(state = 'normal')
         self.etr_maxy.config(state = 'normal')
         self.etr_points_decade.config(state = 'normal')
+        self.but_quit.config(state = 'normal')
+        self.but_clear.config(state = 'normal')
 
     def clear(self):
+        if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'freq', 'vca'])
+
         self.measurement = pd.DataFrame(columns = ['id', 'freq', 'vca'])
         self.plots = 0 # number of plots done. can be up to 4
         self.plot()
@@ -338,9 +355,16 @@ class mclass:
         #ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         if SIM:
-            ax.plot(self.x, self.y, color='white')
+            ax.plot(self.x, self.y, color=self.colors[0])
         else:
-            ax.plot(self.measurement['freq'], self.measurement['vca'], color='white')
+            ax.plot(self.measurement['freq'], self.measurement['vca'], self.colors[0])
+
+        # set legend color
+        ax.legend(self.measurement['id'].astype('int').unique())
+        leg = ax.get_legend()
+        for i, j in enumerate(leg.legendHandles):
+            j.set_color(self.colors[i])
+
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().place(relx=.6, rely=.48, anchor="c")
         canvas.draw()
@@ -358,14 +382,17 @@ class mclass:
             if id < self.plots: continue
             cond = (self.measurement['id'] == id)
             df = self.measurement.loc[cond]
-            c = 'white'
-            if id == 1: c = 'salmon'
-            if id == 2: c = 'deepskyblue'
-            if id == 3: c = 'limegreen'
-            ax.plot(df['freq'], df['vca'], color=c)
+            ax.plot(df['freq'], df['vca'], color=self.colors[int(id)])
+
+        # set legend color
+        ax.legend(self.measurement['id'].astype('int').unique())
+        leg = ax.get_legend()
+        for i, j in enumerate(leg.legendHandles):
+            j.set_color(self.colors[i])
+
         plt.gcf().canvas.draw_idle()
         plt.gcf().canvas.start_event_loop(0.01)
-        #plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
+        plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
     def motion_hover(self, event):
         if self.measurement.empty: return

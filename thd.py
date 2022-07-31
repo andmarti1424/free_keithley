@@ -213,7 +213,8 @@ class mclass:
             #measure Vca in equipment - with VCA mode
             #self.send_cmd(':SENS:FUNC \'VOLT:AC\'')
             #self.send_cmd(':SENS:VOLT:AC:RANG:AUTO ON')
-            #self.send_cmd(':SENS:VOLT:AC:NPLC 0.1') # FAST is 0.1 in AC. 1 is MED and 10 is SLOW.
+            #self.send_cmd(':SENS:VOLT:AC:DET:BAND 300') # 300Hz-300kHz
+            #self.send_cmd(':SENS:VOLT:AC:NPLC 1') # FAST is 0.1 in AC. 1 is MED and 10 is SLOW.
             #self.send_cmd(':SENS:VOLT:AC:DIG 4') # must be 4-7
             #self.send_cmd(':SENS:VOLT:AC:AVER:STAT OFF')
             #self.send_cmd(':TRIG:COUN 1')
