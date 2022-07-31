@@ -3,7 +3,7 @@ SIM = 0 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
 DISPLAY = 1 # display on or off
 UPDATE_INTERVAL= 1 # only used on sim.
-DEFAULT_QTY_HARM = 4 # default number of harmonics to plot in graph
+DEFAULT_QTY_HARM = 8 # default number of harmonics to plot in graph
 DEFAULT_SIGGEN_FREQ = 1000 # in Hz
 DEFAULT_SIGGEN_AMP = 2 # in Vrms
 DEFAULT_DUMMY_RESISTANCE = 8 # in ohms
@@ -14,6 +14,7 @@ from matplotlib.widgets import TextBox
 matplotlib.use('TkAgg')
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from tkinter import *
 import pandas as pd
@@ -54,7 +55,7 @@ class mclass:
         self.str_harm_qty.set(DEFAULT_QTY_HARM)
         self.str_dB = StringVar()
         self.etr_THD = Entry(window, textvariable=self.str_dB, font=('Courier New', 18), width=14, state=DISABLED)
-        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font=('Courier New', 18), width=14)
+        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font=('Courier New', 18), width=4)
         self.etr_harm_qty.place(x = 245, y = 200)
 
         self.siggenFrame = LabelFrame(window, text="", height=210, width=520, background=self.window['bg'])
@@ -66,7 +67,7 @@ class mclass:
         self.chk_SIGGEN.select()
         self.chk_SIGGEN.place(x = 190, y = 10)
         self.lbl_SIGGEN_freq = Label(self.siggenFrame, text="SIG-GEN frequency", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
-        self.lbl_SIGGEN_hz = Label(self.siggenFrame, text="Hz", font=('Courier New', 18), wraplength=150, justify='left')
+        self.lbl_SIGGEN_hz = Label(self.siggenFrame, text="Hz", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.str_SIGGEN_freq = StringVar()
         self.str_SIGGEN_freq.set(DEFAULT_SIGGEN_FREQ)
         self.etr_SIGGEN_freq = Entry(self.siggenFrame, textvariable=self.str_SIGGEN_freq, font=('Courier New', 18), width=14, state=DISABLED)
@@ -77,7 +78,7 @@ class mclass:
         self.lbl_SIGGEN_Vrms = Label(self.siggenFrame, text="Vrms", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.internal_SIGGEN_click()
 
-        self.powerFrame = LabelFrame(window, text="", height=180, width=520, background=self.window['bg'])
+        self.powerFrame = LabelFrame(window, text="", height=200, width=520, background=self.window['bg'])
         self.powerFrame.place(x = 30, y = 700)
         self.lbl_power = Label(self.powerFrame, text="Calculate power", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.lbl_power.place(x = 10, y = 10)
@@ -89,8 +90,14 @@ class mclass:
         self.str_resistance = StringVar()
         self.str_resistance.set(DEFAULT_DUMMY_RESISTANCE)
         self.lbl_ohms = Label(self.powerFrame, text="ohms", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
-        self.etr_resistance = Entry(self.powerFrame, textvariable=self.str_resistance, font=('Courier New', 18), width=14, state=DISABLED)
+        self.etr_resistance = Entry(self.powerFrame, textvariable=self.str_resistance, font=('Courier New', 18), width=4, state=DISABLED)
         self.chk_power_click()
+        # power details
+        self.str_power_calculated = StringVar()
+        self.lbl_power_calculated = Label(self.powerFrame, textvariable=self.str_power_calculated, font=('Courier New', 18), foreground='blue', background=self.window['bg'])
+        #self.lbl_power_calculated.place(x = 1280, y = 965)
+        self.lbl_power_calculated.place(x = 215, y = 140)
+
 
         # measurement results
         self.lbl_Fundamental = Label(window, text = "Fundamental", font=('Courier New', 18), background=self.window['bg'])
@@ -139,12 +146,7 @@ class mclass:
         # harmonic details upon click
         self.str_harm_details = StringVar()
         self.lbl_harm_details = Label(window, textvariable=self.str_harm_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
-        self.lbl_harm_details.place(x = 1080, y = 920)
-
-        # power details
-        self.str_power_calculated = StringVar()
-        self.lbl_power_calculated = Label(window, textvariable=self.str_power_calculated, font=('Courier New', 18, 'bold'), foreground='red', background=self.window['bg'])
-        self.lbl_power_calculated.place(x = 1280, y = 965)
+        self.lbl_harm_details.place(x = 1080, y = 940)
 
         #focus
         self.etr_harm_qty.icursor(1)
@@ -249,9 +251,8 @@ class mclass:
         if SIM: return
         self.send_cmd(':SENS:FUNC \'DIST\'')
         self.send_cmd(':SENS:DIST:TYPE ' + self.rad_values[int(self.rad_var.get())])
-        #TODO
-        #self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
-        self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(DEFAULT_QTY_HARM))
+        self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
+        #self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(DEFAULT_QTY_HARM))
         self.send_cmd(':UNIT:DIST PERC')
         self.send_cmd(':SENS:DIST:SFIL NONE')
         self.send_cmd(':SENS:DIST:RANG:AUTO ON')
@@ -363,7 +364,7 @@ class mclass:
             self.etr_resistance.icursor(len(self.str_resistance.get()))
             self.etr_resistance.focus_set()
             self.lbl_resistance.place(x = 10, y = 80)
-            self.lbl_ohms.place(x = 420, y = 80)
+            self.lbl_ohms.place(x = 280, y = 80)
             self.etr_resistance.place(x = 215, y = 80)
 
     def internal_SIGGEN_click(self):
@@ -523,8 +524,9 @@ class mclass:
                 self.str_harm_details.set(lbl.get_text() + '\n' + format(db, '.6f') + "dB" + '\n' + format(pow(10, db/20)*100, '.6f') + " %" + '\n' + self.rad_values[int(self.rad_var.get())])
 
     def plot(self):
-        self.fig = Figure(figsize=(8,8))
-        ax = self.fig.add_subplot(111)
+        #self.fig = Figure(figsize=(8,8))
+        #ax = self.fig.add_subplot(111)
+        self.fig, ax = plt.subplots(figsize=(13, 9))
 
         # sim population of data
         if SIM:
@@ -551,7 +553,7 @@ class mclass:
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         #canvas.get_tk_widget().pack(anchor=tkinter.CENTER, expand=0)
-        canvas.get_tk_widget().place(relx=.6, rely=.48, anchor="c")
+        canvas.get_tk_widget().place(relx=.65, rely=.46, anchor="c")
         self.plot_packed = 1
         #canvas.mpl_connect('button_press_event', self.print_harm_details)
         canvas.mpl_connect('motion_notify_event', self.print_harm_details)

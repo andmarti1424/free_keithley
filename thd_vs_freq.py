@@ -60,12 +60,12 @@ class mclass:
         self.lbl_amplitude.place(x = 40, y = 203)
         self.str_amplitude = StringVar()
         self.str_amplitude.set(DEFAULT_INPUT_SIGNAL_AMPLITUDE)
-        self.etr_amplitude = Entry(window, textvariable=self.str_amplitude, font=('Courier New', 18), width=3)
+        self.etr_amplitude = Entry(window, textvariable=self.str_amplitude, font=('Courier New', 18), width=6)
         self.etr_amplitude.place(x = 360, y = 200)
         self.etr_amplitude.focus_set()
         self.etr_amplitude.icursor(1)
         self.lbl_amplitude_vrms = Label(window, text="Vrms", font=('Courier New', 18), background=self.window['bg'])
-        self.lbl_amplitude_vrms.place(x = 410, y = 203)
+        self.lbl_amplitude_vrms.place(x = 455, y = 203)
 
         # points per decade
         self.lbl_points_decade = Label(window, text="points per decade", font=('Courier New', 18), background=self.window['bg'])
@@ -92,7 +92,7 @@ class mclass:
         self.lbl_maxy = Label(window, text="max value in Y axis", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_maxy.place(x = 40, y = 383)
         self.lbl_maxy = Label(window, text="%", font=('Courier New', 18), background=self.window['bg'])
-        self.lbl_maxy.place(x = 410, y = 383)
+        self.lbl_maxy.place(x = 415, y = 383)
         self.str_maxy = StringVar()
         self.str_maxy.set(DEFAULT_MAXY)
         self.etr_maxy = Entry(window, textvariable=self.str_maxy, font=('Courier New', 18), width=3)
@@ -111,6 +111,7 @@ class mclass:
         self.txt_coordinates.config(highlightthickness = 0, borderwidth=0)
         for c in self.colors:
             self.txt_coordinates.tag_configure(c, foreground=c)
+        self.txt_coordinates.tag_configure("green", foreground="green")
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 16), background=self.window['bg'])
@@ -387,7 +388,7 @@ class mclass:
         plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
     def plot(self, draw = 1):
-        self.fig, ax = plt.subplots(figsize=(14, 9))
+        self.fig, ax = plt.subplots(figsize=(13, 9))
         self.fig.tight_layout()
         plt.rcParams['toolbar'] = 'None'
         self.fig.set_facecolor(self.window['bg'])
@@ -406,7 +407,7 @@ class mclass:
         ax.plot(self.measurement['freq'], self.measurement['thd'], color=self.colors[0])
         ax.legend(self.measurement['id'].astype('int').unique())
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
-        canvas.get_tk_widget().place(relx=.61, rely=.48, anchor="c")
+        canvas.get_tk_widget().place(relx=.64, rely=.48, anchor="c")
         if draw:
             canvas.draw()
             canvas.start_event_loop(0.05)
@@ -427,7 +428,10 @@ class mclass:
             #show coordinates of cursor
             #self.str_coordinates.set("found %s %s" % (x, y))
             self.txt_coordinates.delete('1.0', END)
-            self.txt_coordinates.insert(END, "freq. %s Hz - THD: " % format(freq, '.2f').rjust(8, " "))
+            self.txt_coordinates.insert(END, "freq.: ")
+            self.txt_coordinates.insert(END, " %s " % format(freq, '.2f').rjust(8, " "), "green")
+            self.txt_coordinates.insert(END, "Hz - THD: ")
+            #self.txt_coordinates.insert(END, "freq. %s Hz - THD: " % format(freq, '.2f').rjust(8, " "))
             for i, r in (df.loc[(df['freq'] == freq)]).iterrows():
                 self.txt_coordinates.insert(END, "%s%% " % format(r['thd'], '.2f'), self.colors[int(r['id'])])
             self.txt_coordinates.insert(END, "\n (%s, %s)" % (format(event.xdata, '.2f'), y))

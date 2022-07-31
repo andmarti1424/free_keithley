@@ -143,6 +143,7 @@ class mclass:
         self.txt_coordinates.config(highlightthickness = 0, borderwidth=0)
         for c in self.colors:
             self.txt_coordinates.tag_configure(c, foreground=c)
+        self.txt_coordinates.tag_configure("green", foreground="green")
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
@@ -478,7 +479,10 @@ class mclass:
 
             self.txt_coordinates.config(state='normal')
             self.txt_coordinates.delete('1.0', END)
-            self.txt_coordinates.insert(END, "power: %s Wrms - THD: " % format(p, '.2f').rjust(6, " "))
+            self.txt_coordinates.insert(END, "power: ")
+            self.txt_coordinates.insert(END, " %s " % format(p, '.2f').rjust(6, " "), "green")
+            self.txt_coordinates.insert(END, "Wrms - THD: ")
+            #self.txt_coordinates.insert(END, "power: %s Wrms - THD: " % format(p, '.2f').rjust(6, " "))
             for i, r in (df.loc[(df['vin'] == vin)]).iterrows():
                 self.txt_coordinates.insert(END, "%s%% " % format(r['thd'], '.2f'), self.colors[int(r['id'])])
             self.txt_coordinates.insert(END, "\n (%s, %s)" % (format(event.xdata, '.2f'), y))
