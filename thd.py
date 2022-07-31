@@ -18,6 +18,7 @@ from matplotlib.figure import Figure
 from tkinter import *
 import pandas as pd
 import time
+import math
 import threading
 import tkinter.messagebox
 import serial
@@ -39,109 +40,111 @@ class mclass:
             self.start_serial()
 
         #setup UI
-        self.lbl_title = Label(window, text='Keithley 2015 - THD measurement', fg='#1C5AAC', font=('Helvetica 24 bold'))
+        self.window['bg'] = 'silver'
+
+        self.lbl_title = Label(window, text='Keithley 2015 - THD measurement', fg='#1C5AAC', font=('Courier New', 24, 'bold'), background=self.window['bg'])
         self.lbl_title.pack(ipady=15, expand=False, side=TOP)
 
-        self.lbl_harm_qty = Label(window, text = "Measure:", font='Helvetica 18')
+        self.lbl_harm_qty = Label(window, text = "Measure:", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_harm_qty.place(x = 40, y = 100)
 
-        self.lbl_harm_qty = Label(window, text = "Harm. Qty", font='Helvetica 18')
+        self.lbl_harm_qty = Label(window, text = "Harm. Qty", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_harm_qty.place(x = 40, y = 200)
         self.str_harm_qty = StringVar()
         self.str_harm_qty.set(DEFAULT_QTY_HARM)
         self.str_dB = StringVar()
-        self.etr_THD = Entry(window, textvariable=self.str_dB, font='Helvetica 18', width=14, state=DISABLED)
-        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font='Helvetica 18', width=14)
+        self.etr_THD = Entry(window, textvariable=self.str_dB, font=('Courier New', 18), width=14, state=DISABLED)
+        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font=('Courier New', 18), width=14)
         self.etr_harm_qty.place(x = 245, y = 200)
 
-        self.siggenFrame = LabelFrame(window, text="", height=210, width=520)
+        self.siggenFrame = LabelFrame(window, text="", height=210, width=520, background=self.window['bg'])
         self.siggenFrame.place(x = 30, y = 270)
-        self.lbl_SIGGEN = Label(self.siggenFrame, text="Use internal SIG-GEN", font='Helvetica 18', wraplength=150, justify='left')
+        self.lbl_SIGGEN = Label(self.siggenFrame, text="Use internal SIG-GEN", font=('Courier New', 18), wraplength=200, justify='left', background=self.window['bg'])
         self.lbl_SIGGEN.place(x = 10, y = 10)
         self.chk_SIGGEN_var = IntVar()
-        self.chk_SIGGEN = Checkbutton(self.siggenFrame, variable=self.chk_SIGGEN_var, onvalue = 1, offvalue = 0, height=1, width = 1, font='Helvetica 22', command=self.internal_SIGGEN_click)
+        self.chk_SIGGEN = Checkbutton(self.siggenFrame, variable=self.chk_SIGGEN_var, onvalue = 1, offvalue = 0, height=1, width = 1, font='Helvetica 22', command=self.internal_SIGGEN_click, background=self.window['bg'])
         self.chk_SIGGEN.select()
         self.chk_SIGGEN.place(x = 190, y = 10)
-        self.lbl_SIGGEN_freq = Label(self.siggenFrame, text="SIG-GEN frequency", font='Helvetica 18', wraplength=150, justify='left')
-        self.lbl_SIGGEN_hz = Label(self.siggenFrame, text="Hz", font='Helvetica 18', wraplength=150, justify='left')
+        self.lbl_SIGGEN_freq = Label(self.siggenFrame, text="SIG-GEN frequency", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
+        self.lbl_SIGGEN_hz = Label(self.siggenFrame, text="Hz", font=('Courier New', 18), wraplength=150, justify='left')
         self.str_SIGGEN_freq = StringVar()
         self.str_SIGGEN_freq.set(DEFAULT_SIGGEN_FREQ)
-        self.etr_SIGGEN_freq = Entry(self.siggenFrame, textvariable=self.str_SIGGEN_freq, font='Helvetica 18', width=14, state=DISABLED)
-        self.lbl_SIGGEN_amp = Label(self.siggenFrame, text="SIG-GEN amplitude", font='Helvetica 18', wraplength=150, justify='left')
+        self.etr_SIGGEN_freq = Entry(self.siggenFrame, textvariable=self.str_SIGGEN_freq, font=('Courier New', 18), width=14, state=DISABLED)
+        self.lbl_SIGGEN_amp = Label(self.siggenFrame, text="SIG-GEN amplitude", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.str_SIGGEN_amp = StringVar()
         self.str_SIGGEN_amp.set(DEFAULT_SIGGEN_AMP)
-        self.etr_SIGGEN_amp = Entry(self.siggenFrame, textvariable=self.str_SIGGEN_amp, font='Helvetica 18', width=14, state=DISABLED)
-        self.lbl_SIGGEN_Vrms = Label(self.siggenFrame, text="Vrms", font='Helvetica 18', wraplength=150, justify='left')
+        self.etr_SIGGEN_amp = Entry(self.siggenFrame, textvariable=self.str_SIGGEN_amp, font=('Courier New', 18), width=14, state=DISABLED)
+        self.lbl_SIGGEN_Vrms = Label(self.siggenFrame, text="Vrms", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.internal_SIGGEN_click()
 
-        self.powerFrame = LabelFrame(window, text="", height=180, width=520)
+        self.powerFrame = LabelFrame(window, text="", height=180, width=520, background=self.window['bg'])
         self.powerFrame.place(x = 30, y = 700)
-        self.lbl_power = Label(self.powerFrame, text="Calculate power", font='Helvetica 18', wraplength=150, justify='left')
+        self.lbl_power = Label(self.powerFrame, text="Calculate power", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.lbl_power.place(x = 10, y = 10)
         self.chk_power_var = IntVar()
-        self.chk_power = Checkbutton(self.powerFrame, variable=self.chk_power_var, onvalue = 1, offvalue = 0, height=1, width = 1, font='Helvetica 22', command=self.chk_power_click)
+        self.chk_power = Checkbutton(self.powerFrame, variable=self.chk_power_var, onvalue = 1, offvalue = 0, height=1, width = 1, font='Helvetica 22', command=self.chk_power_click, background=self.window['bg'])
         self.chk_power.select()
         self.chk_power.place(x = 190, y = 10)
-        self.lbl_resistance = Label(self.powerFrame, text="dummy load resistance", font='Helvetica 18', wraplength=150, justify='left')
+        self.lbl_resistance = Label(self.powerFrame, text="dummy load resistance", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.str_resistance = StringVar()
         self.str_resistance.set(DEFAULT_DUMMY_RESISTANCE)
-        self.lbl_ohms = Label(self.powerFrame, text="ohms", font='Helvetica 18', wraplength=150, justify='left')
-        self.etr_resistance = Entry(self.powerFrame, textvariable=self.str_resistance, font='Helvetica 18', width=14, state=DISABLED)
+        self.lbl_ohms = Label(self.powerFrame, text="ohms", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
+        self.etr_resistance = Entry(self.powerFrame, textvariable=self.str_resistance, font=('Courier New', 18), width=14, state=DISABLED)
         self.chk_power_click()
 
         # measurement results
-        self.lbl_Fundamental = Label(window, text = "Fundamental", font='Helvetica 18')
+        self.lbl_Fundamental = Label(window, text = "Fundamental", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_Fundamental.place(x = 40, y = 520)
         self.str_hz = StringVar()
-        self.etr_hz = Entry(window, textvariable=self.str_hz, font='Helvetica 18', width=14, state=DISABLED)
+        self.etr_hz = Entry(window, textvariable=self.str_hz, font=('Courier New', 18), width=14, state=DISABLED)
         self.etr_hz.place(x = 245, y = 500)
-        self.lbl_freq = Label(window, text = "Hz", font='Helvetica 18')
+        self.lbl_freq = Label(window, text = "Hz", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_freq.place(x = 450, y = 505)
-        self.lbl_vac = Label(window, text = "Vac rms", font='Helvetica 18')
+        self.lbl_vac = Label(window, text = "Vac rms", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_vac.place(x = 450, y = 545)
         self.str_vac = StringVar()
-        self.etr_vac = Entry(window, textvariable=self.str_vac, font='Helvetica 18', width=14, state=DISABLED)
+        self.etr_vac = Entry(window, textvariable=self.str_vac, font=('Courier New', 18), width=14, state=DISABLED)
         self.etr_vac.place(x = 245, y = 540)
         self.str_measurement_type = StringVar()
 
-        self.lbl_THD = Label(window, textvariable=self.str_measurement_type, font='Helvetica 18')
+        self.lbl_THD = Label(window, textvariable=self.str_measurement_type, font=('Courier New', 18), background=self.window['bg'])
         self.lbl_THD.place(x = 40, y = 600)
         self.etr_THD.place(x = 245, y = 580)
-        self.lbl_db = Label(window, text = "dB", font='Helvetica 18')
+        self.lbl_db = Label(window, text = "dB", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_db.place(x = 450, y = 585)
-        self.lbl_percentage = Label(window, text = "%", font='Helvetica 18')
+        self.lbl_percentage = Label(window, text = "%", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_percentage.place(x = 450, y = 545)
         self.str_perc = StringVar()
-        self.etr_perc_THD = Entry(window, textvariable=self.str_perc, font='Helvetica 18', width=14, state=DISABLED)
+        self.etr_perc_THD = Entry(window, textvariable=self.str_perc, font=('Courier New', 18), width=14, state=DISABLED)
         self.etr_perc_THD.place(x = 245, y = 620)
 
         # TYPE OF MEASUREMENT radio button
         self.rad_var = IntVar()
         self.rad_values = ["THD", "THDN", "SINAD"]
-        self.rad_thd = Radiobutton(window, variable=self.rad_var, text=self.rad_values[0], value=0, font='Helvetica 18', command=self.change_measurement_type)
+        self.rad_thd = Radiobutton(window, variable=self.rad_var, text=self.rad_values[0], value=0, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_thd.invoke()
         self.rad_thd.select()
         self.rad_thd.place(x = 230, y = 60)
-        self.rad_thdn = Radiobutton(window, variable=self.rad_var, text=self.rad_values[1], value=1, font='Helvetica 18', command=self.change_measurement_type)
+        self.rad_thdn = Radiobutton(window, variable=self.rad_var, text=self.rad_values[1], value=1, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_thdn.place(x = 230, y = 100)
-        self.rad_sinad = Radiobutton(window, variable=self.rad_var, text=self.rad_values[2], value=2, font='Helvetica 18', command=self.change_measurement_type)
+        self.rad_sinad = Radiobutton(window, variable=self.rad_var, text=self.rad_values[2], value=2, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_sinad.place(x = 230, y = 140)
 
         # buttons
-        self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
+        self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
         self.but_quit.place(x=120, y=980)
-        self.but_start = Button(window, text="START", command=self.change_state, font='Helvetica 18')
+        self.but_start = Button(window, text="START", command=self.change_state, font=('Courier New', 18))
         self.but_start.place(x=245, y=980)
 
         # harmonic details upon click
         self.str_harm_details = StringVar()
-        self.lbl_harm_details = Label(window, textvariable=self.str_harm_details, font='Helvetica 18 bold')
-        self.lbl_harm_details.place(x = 1080, y = 945)
+        self.lbl_harm_details = Label(window, textvariable=self.str_harm_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
+        self.lbl_harm_details.place(x = 1080, y = 920)
 
         # power details
         self.str_power_calculated = StringVar()
-        self.lbl_power_calculated = Label(window, textvariable=self.str_power_calculated, font='Helvetica 18 bold')
-        self.lbl_power_calculated.place(x = 1280, y = 945)
+        self.lbl_power_calculated = Label(window, textvariable=self.str_power_calculated, font=('Courier New', 18, 'bold'), foreground='red', background=self.window['bg'])
+        self.lbl_power_calculated.place(x = 1280, y = 965)
 
         #focus
         self.etr_harm_qty.icursor(1)
@@ -446,7 +449,8 @@ class mclass:
         ax.set_xlabel('harmonics', fontsize=20, loc='center')
         ax.set_facecolor('xkcd:black')
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
-        self.fig.canvas.mpl_connect('button_press_event', self.print_harm_details)
+        #self.fig.canvas.mpl_connect('button_press_event', self.print_harm_details)
+        self.fig.canvas.mpl_connect('motion_notify_event', self.print_harm_details)
         self.fig.canvas.draw()
 
     def change_state(self):
@@ -474,7 +478,7 @@ class mclass:
             self.measure_thd()
             self.running = True
             if (not self.plot_packed): self.plot()
-            self.but_start['text'] = "STOP"
+            self.but_start['text'] = "STOP "
             self.etr_harm_qty.config(state = 'disabled')
             self.chk_SIGGEN.config(state = 'disabled')
             self.chk_power.config(state = 'disabled')
@@ -487,6 +491,7 @@ class mclass:
             self.replot_thread()
 
     def print_harm_details(self, event):
+        """for use with click event
         ax = event.inaxes
         x = event.xdata
         lbls = ax.get_xticklabels()
@@ -499,6 +504,23 @@ class mclass:
             db = self.data.iat[idx, 1]
             self.str_harm_details.set(lbl.get_text() + '\n' + format(db, '.6f') + "dB" + '\n' + format(pow(10, db/20)*100, '.6f') + " %" + '\n' +
             self.rad_values[int(self.rad_var.get())])
+        """
+        #for use with hover over
+        ax = self.fig.get_axes()[0]
+        if ax is None: return
+        if event.inaxes == ax:
+            x = math.floor(event.xdata + 0.5)
+            ax = event.inaxes
+            y = format(event.ydata, '.6f')
+            lbls = ax.get_xticklabels()
+            lbl = lbls[x]
+            if lbl.get_text() == "": return
+            elif lbl.get_text() == "h1":
+                self.str_harm_details.set('h1\n' + self.fundamental_freq + " Hz" + '\n' + format(self.fundamental_vrms, '.6f') + " Vrms")
+            else:
+                if x >= int(self.str_harm_qty.get()): return
+                db = self.data.iat[x, 1]
+                self.str_harm_details.set(lbl.get_text() + '\n' + format(db, '.6f') + "dB" + '\n' + format(pow(10, db/20)*100, '.6f') + " %" + '\n' + self.rad_values[int(self.rad_var.get())])
 
     def plot(self):
         self.fig = Figure(figsize=(8,8))
@@ -512,6 +534,7 @@ class mclass:
         if DEBUG:
             print(self.data)
 
+        self.fig.set_facecolor(self.window['bg'])
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.bar(self.data.harm, self.data.dB - BOTTOM_DB, bottom=BOTTOM_DB, color='darkorange', align='center', width=.65, alpha=0.6, picker=True)
         ax.margins(x=0)
@@ -528,9 +551,10 @@ class mclass:
         ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         #canvas.get_tk_widget().pack(anchor=tkinter.CENTER, expand=0)
-        canvas.get_tk_widget().place(relx=.6, rely=.5, anchor="c")
+        canvas.get_tk_widget().place(relx=.6, rely=.48, anchor="c")
         self.plot_packed = 1
-        canvas.mpl_connect('button_press_event', self.print_harm_details)
+        #canvas.mpl_connect('button_press_event', self.print_harm_details)
+        canvas.mpl_connect('motion_notify_event', self.print_harm_details)
         canvas.draw()
 
     def _replot_thread(self):

@@ -38,30 +38,30 @@ class mclass:
         self.fig.canvas = FigureCanvasTkAgg(self.fig, master=window)
         np.random.seed(42)
 
-        self.title = Label(window, text='Keithley 2015 - Vdc Logger', fg='#1C5AAC', font=('Helvetica 24 bold'))
+        self.title = Label(window, text='Keithley 2015 - Vdc Logger', fg='#1C5AAC', font=('Courier New', 24, 'bold'))
         self.title.pack(ipady=15, expand=False, side=TOP)
 
         #details
-        self.value = Label(window, text='', fg="red", font=('Helvetica 16 bold'))
+        self.value = Label(window, text='', fg="red", font=('Courier New', 16, 'bold'))
         self.value.place(x=150, y=200)
-        self.readings = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.readings = Label(window, text='', fg='#1C5AAC', font=('Courier New', 16, 'bold'))
         self.readings.place(x=150, y=240)
-        self.max_value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.max_value = Label(window, text='', fg='#1C5AAC', font=('Courier New', 16, 'bold'))
         self.max_value.place(x=150, y=280)
-        self.min_value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.min_value = Label(window, text='', fg='#1C5AAC', font=('Courier New', 16, 'bold'))
         self.min_value.place(x=150, y=320)
-        self.avg_value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.avg_value = Label(window, text='', fg='#1C5AAC', font=('Courier New', 16, 'bold'))
         self.avg_value.place(x=150, y=360)
-        self.std_value = Label(window, text='', fg='#1C5AAC', font=('Helvetica 16 bold'))
+        self.std_value = Label(window, text='', fg='#1C5AAC', font=('Courier New', 16, 'bold'))
         self.std_value.place(x=150, y=400)
 
         #BUTTONS
-        self.button_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18 bold')
+        self.button_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
         self.button_quit.place(x=40, y=680)
-        self.button_start = Button(window, text="START", command=self.change_state, font='Helvetica 18 bold')
-        self.button_start.place(x=165, y=680)
-        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font='Helvetica 18 bold', state='disabled')
-        self.button_clear.place(x=310, y=680)
+        self.button_start = Button(window, text="START", command=self.change_state, font=('Courier New', 18))
+        self.button_start.place(x=160, y=680)
+        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font=('Courier New', 18), state='disabled')
+        self.button_clear.place(x=293, y=680)
         #end of ui
 
         if not SIM:
@@ -196,6 +196,7 @@ class mclass:
 
         self.ax.clear() # clear previous plot !!!!
         self.ax.tick_params(labeltop=False, labelright=True)
+        self.fig.set_facecolor(self.window['bg'])
 
         #format y axis
         #ax.yaxis.set_minor_locator(AutoMinorLocator())
@@ -240,10 +241,10 @@ class mclass:
 
 
             self.readings.config(text="readings: %d" % df.size)
-            self.max_value.config(text="max: %s Vrms" % format(df['value'].max(), '.6f'))
-            self.min_value.config(text="min: %s Vrms" % format(df['value'].min(), '.6f'))
-            self.avg_value.config(text="avg: %s Vrms" % format(df['value'].mean(), '.6f'))
-            self.std_value.config(text="std: %s Vrms" % format(df['value'].std(), '.6f'))
+            self.max_value.config(text="max: %s Vrms" % format(df['value'].max(), '.6f').rjust(11))
+            self.min_value.config(text="min: %s Vrms" % format(df['value'].min(), '.6f').rjust(11))
+            self.avg_value.config(text="avg: %s Vrms" % format(df['value'].mean(), '.6f').rjust(11))
+            self.std_value.config(text="std: %s Vrms" % format(df['value'].std(), '.6f').rjust(11))
 
             self.ax.set_xlabel('time, ms', fontsize=20, loc='right')
             self.ax.set_ylabel('level, Vrms', fontsize=20, loc='center')

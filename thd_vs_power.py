@@ -1,8 +1,7 @@
 # some config
-SIM = 1
+SIM = 0
 DEBUG = 0
 DISPLAY = 1 # display on or off
-
 DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
 DEFAULT_VIN_MIN = 0.1
 DEFAULT_VIN_MAX = 1.5
@@ -13,7 +12,9 @@ DEFAULT_FREQ = 1000
 
 #TODO:
 #add validations of user input
+#export data measured
 #add protection (max THD value)
+#test case in which you change points in range between two different measurements
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,118 +36,121 @@ class mclass:
         self.abort = 0
 
         # setup UI
-        self.colors=['white', 'salmon', 'deepskyblue', 'limegreen']
+        self.colors=['whitesmoke', 'crimson', 'deepskyblue', 'limegreen']
         self.str_title = StringVar()
+        self.window['bg'] = 'silver'
 
         # TYPE OF MEASUREMENT radio button
-        self.lbl_harm_qty = Label(window, text = "Measure:", font='Helvetica 18')
+        self.lbl_harm_qty = Label(window, text = "Measure:", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_harm_qty.place(x = 40, y = 123)
         self.str_measurement_type = StringVar()
         self.rad_var = IntVar()
         self.rad_values = ["THD", "THD+N"]
-        self.rad_thd = Radiobutton(window, variable=self.rad_var, text=self.rad_values[0], value=0, font='Helvetica 18', command=self.change_measurement_type)
+        self.rad_thd = Radiobutton(window, variable=self.rad_var, text=self.rad_values[0], value=0, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_thd.invoke()
         self.rad_thd.select()
         self.rad_thd.place(x = 244, y = 103)
-        self.rad_thdn = Radiobutton(window, variable=self.rad_var, text=self.rad_values[1], value=1, font='Helvetica 18', command=self.change_measurement_type)
+        self.rad_thdn = Radiobutton(window, variable=self.rad_var, text=self.rad_values[1], value=1, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_thdn.place(x = 244, y = 140)
 
         # title
         self.str_title.set("Keithley 2015 - %s vs Power" % self.rad_values[0])
-        self.lbl_title = Label(window, textvariable=self.str_title, fg='#1C5AAC', font=('Helvetica 24 bold'))
+        self.lbl_title = Label(window, textvariable=self.str_title, fg='#1C5AAC', font=('Courier New', 24, 'bold'), background=self.window['bg'])
         self.lbl_title.pack(ipady=15, expand=False, side=TOP)
 
         # load impedance
-        self.lbl_load_impedance = Label(window, text="load impedance", font='Helvetica 18')
+        self.lbl_load_impedance = Label(window, text="load impedance", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_load_impedance.place(x = 40, y = 203)
-        self.lbl_load_impedance = Label(window, text="ohms", font='Helvetica 18')
-        self.lbl_load_impedance.place(x = 395, y = 203)
+        self.lbl_load_impedance = Label(window, text="ohms", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_load_impedance.place(x = 445, y = 203)
         self.str_load_impedance = StringVar()
         self.str_load_impedance.set(DEFAULT_LOAD_IMPEDANCE)
-        self.etr_load_impedance = Entry(window, textvariable=self.str_load_impedance, font='Helvetica 18', width=6)
-        self.etr_load_impedance.place(x = 300, y = 200)
+        self.etr_load_impedance = Entry(window, textvariable=self.str_load_impedance, font=('Courier New', 18), width=6)
+        self.etr_load_impedance.place(x = 350, y = 200)
         self.etr_load_impedance.focus_set()
         self.etr_load_impedance.icursor(1)
 
         # min input signal voltage
-        self.lbl_vin_min = Label(window, text="min input signal", font='Helvetica 18')
+        self.lbl_vin_min = Label(window, text="min input signal", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_vin_min.place(x = 40, y = 263)
-        self.lbl_vin_min = Label(window, text="Vrms", font='Helvetica 18')
-        self.lbl_vin_min.place(x = 395, y = 263)
+        self.lbl_vin_min = Label(window, text="Vrms", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_vin_min.place(x = 445, y = 263)
         self.str_vin_min = StringVar()
         self.str_vin_min.set(DEFAULT_VIN_MIN)
-        self.etr_vin_min = Entry(window, textvariable=self.str_vin_min, font='Helvetica 18', width=6)
-        self.etr_vin_min.place(x = 300, y = 260)
+        self.etr_vin_min = Entry(window, textvariable=self.str_vin_min, font=('Courier New', 18), width=6)
+        self.etr_vin_min.place(x = 350, y = 260)
         self.etr_vin_min.icursor(1)
 
         # min input signal voltage
-        self.lbl_vin_max = Label(window, text="max input signal", font='Helvetica 18')
+        self.lbl_vin_max = Label(window, text="max input signal", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_vin_max.place(x = 40, y = 323)
-        self.lbl_vin_max = Label(window, text="Vrms", font='Helvetica 18')
-        self.lbl_vin_max.place(x = 395, y = 323)
+        self.lbl_vin_max = Label(window, text="Vrms", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_vin_max.place(x = 445, y = 323)
         self.str_vin_max = StringVar()
         self.str_vin_max.set(DEFAULT_VIN_MAX)
-        self.etr_vin_max = Entry(window, textvariable=self.str_vin_max, font='Helvetica 18', width=6)
-        self.etr_vin_max.place(x = 300, y = 320)
+        self.etr_vin_max = Entry(window, textvariable=self.str_vin_max, font=('Courier New', 18), width=6)
+        self.etr_vin_max.place(x = 350, y = 320)
         self.etr_vin_max.icursor(1)
 
         # points in input range
-        self.lbl_points = Label(window, text="points in input range", font='Helvetica 18')
+        self.lbl_points = Label(window, text="points in input range", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_points.place(x = 40, y = 383)
         self.str_points = StringVar()
         self.str_points.set(DEFAULT_POINTS)
-        self.etr_points = Entry(window, textvariable=self.str_points, font='Helvetica 18', width=6)
-        self.etr_points.place(x = 300, y = 380)
+        self.etr_points = Entry(window, textvariable=self.str_points, font=('Courier New', 18), width=6)
+        self.etr_points.place(x = 350, y = 380)
         self.etr_points.icursor(1)
 
         # frequency
-        self.lbl_freq = Label(window, text="input signal freq.", font='Helvetica 18')
+        self.lbl_freq = Label(window, text="input signal freq.", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_freq.place(x = 40, y = 443)
-        self.lbl_freq = Label(window, text="Hz", font='Helvetica 18')
-        self.lbl_freq.place(x = 395, y = 443)
+        self.lbl_freq = Label(window, text="Hz", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_freq.place(x = 445, y = 443)
         self.str_freq = StringVar()
         self.str_freq.set(DEFAULT_FREQ)
-        self.etr_freq = Entry(window, textvariable=self.str_freq, font='Helvetica 18', width=6)
-        self.etr_freq.place(x = 300, y = 440)
+        self.etr_freq = Entry(window, textvariable=self.str_freq, font=('Courier New', 18), width=6)
+        self.etr_freq.place(x = 350, y = 440)
         self.etr_freq.icursor(1)
 
         # number of harmonics
-        self.lbl_harm_qty = Label(window, text="number of harmonics", font='Helvetica 18')
+        self.lbl_harm_qty = Label(window, text="number of harmonics", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_harm_qty.place(x = 40, y = 503)
         self.str_harm_qty = StringVar()
         self.str_harm_qty.set(DEFAULT_QTY_HARM)
-        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font='Helvetica 18', width=6)
-        self.etr_harm_qty.place(x = 300, y = 500)
+        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font=('Courier New', 18), width=6)
+        self.etr_harm_qty.place(x = 350, y = 500)
         self.etr_harm_qty.icursor(1)
 
         # y max
-        self.lbl_maxy = Label(window, text="max value in Y axis", font='Helvetica 18')
+        self.lbl_maxy = Label(window, text="max value in Y axis", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_maxy.place(x = 40, y = 563)
-        self.lbl_maxy = Label(window, text="%", font='Helvetica 18')
-        self.lbl_maxy.place(x = 395, y = 563)
+        self.lbl_maxy = Label(window, text="%", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_maxy.place(x = 445, y = 563)
         self.str_maxy = StringVar()
         self.str_maxy.set(DEFAULT_MAXY)
-        self.etr_maxy = Entry(window, textvariable=self.str_maxy, font='Helvetica 18', width=6)
-        self.etr_maxy.place(x = 300, y = 560)
+        self.etr_maxy = Entry(window, textvariable=self.str_maxy, font=('Courier New', 18), width=6)
+        self.etr_maxy.place(x = 350, y = 560)
         self.etr_maxy.icursor(1)
 
         # details - input sweep
         self.str_details = StringVar()
-        self.lbl_details = Label(window, textvariable=self.str_details, font='Helvetica 18 bold')
+        self.lbl_details = Label(window, textvariable=self.str_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
         self.lbl_details.place(x = 40, y = 1000)
 
         # coordinates
-        self.str_coordinates = StringVar()
-        self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font='Helvetica 18 bold')
-        self.lbl_coordinates.place(x = 710, y = 1000)
+        self.txt_coordinates = Text(bd=0, bg=window['bg'], height=3, wrap="none", state="normal", font=('Courier New', 18), background=self.window['bg'])
+        self.txt_coordinates.place(x = 710, y = 1000)
+        self.txt_coordinates.config(highlightthickness = 0, borderwidth=0)
+        for c in self.colors:
+            self.txt_coordinates.tag_configure(c, foreground=c)
 
         # buttons
-        self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
+        self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
         self.but_quit.place(x=40, y=680)
-        self.but_start = Button(window, text="RUN", command=self.change_state, font='Helvetica 18')
-        self.but_start.place(x=165, y=680)
-        self.but_clear = Button(window, text="CLEAR", command=self.clear, font='Helvetica 18')
-        self.but_clear.place(x=280, y=680)
+        self.but_start = Button(window, text=" RUN ", command=self.change_state, font=('Courier New', 18))
+        self.but_start.place(x=160, y=680)
+        self.but_clear = Button(window, text="CLEAR", command=self.clear, font=('Courier New', 18))
+        self.but_clear.place(x=293, y=680)
         #end of ui
 
         if SIM:
@@ -256,6 +260,9 @@ class mclass:
         #self.str_title.set("Keithley 2015 - %s vs Power" % self.str_measurement_type.get())
 
     def clear(self):
+        self.txt_coordinates.config(state='normal')
+        self.txt_coordinates.delete('1.0', END)
+        self.txt_coordinates.config(state='disabled')
         self.measurement = pd.DataFrame(columns = ['id', 'vin', 'vout', 'thd', 'impedance'])
         self.plots = 0 # number of plots done. can be up to 4
         self.plot()
@@ -267,7 +274,7 @@ class mclass:
             self.str_details.set("Please clear plot before making a new measurement")
             return
 
-        if (self.but_start['text'] == "RUN"):
+        if (self.but_start['text'] == " RUN "):
             self.etr_load_impedance.config(state = 'disabled')
             self.etr_vin_min.config(state = 'disabled')
             self.etr_vin_max.config(state = 'disabled')
@@ -280,6 +287,7 @@ class mclass:
             self.but_start['text'] = "ABORT"
             self.but_quit.config(state = 'disabled')
             self.but_clear.config(state = 'disabled')
+            self.window.update_idletasks()
 
             # create data structure
             if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'vin', 'vout', 'thd', 'impedance'])
@@ -308,7 +316,7 @@ class mclass:
             # setup equipment for measurement THD
             self.setup_thd_measurement()
 
-            if not self.plots: self.plot()
+            if not self.plots: self.plot(0)
 
             #if DEBUG: print(self.measurement)
             #time.sleep(20)
@@ -324,7 +332,7 @@ class mclass:
                     self.measurement.loc[cond, 'vout'] = float(0)
                     #print(self.measurement)
                     self.str_details.set("ABORTED")
-                    self.but_start['text'] = "RUN"
+                    self.but_start['text'] = " RUN "
                     self.abort = 0
                     self.etr_load_impedance.config(state = 'normal')
                     self.etr_vin_min.config(state = 'normal')
@@ -370,7 +378,7 @@ class mclass:
             #time.sleep(20)
 
             self.plots += 1
-            self.but_start['text'] = "RUN"
+            self.but_start['text'] = " RUN "
             self.str_details.set("DONE")
             self.rad_thd.config(state = 'normal')
             self.rad_thdn.config(state = 'normal')
@@ -422,9 +430,10 @@ class mclass:
         plt.gcf().canvas.start_event_loop(0.01)
         plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
-    def plot(self):
+    def plot(self, draw = 1):
         self.fig, ax = plt.subplots(figsize=(13, 9))
         self.fig.tight_layout()
+        self.fig.set_facecolor(self.window['bg'])
         plt.rcParams['toolbar'] = 'None'
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.set(xscale="log")
@@ -450,9 +459,10 @@ class mclass:
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().place(relx=.65, rely=.48, anchor="c")
-        canvas.draw()
-        canvas.start_event_loop(0.05)
-        canvas.mpl_connect('motion_notify_event', self.motion_hover)
+        if draw:
+            canvas.draw()
+            canvas.start_event_loop(0.05)
+            canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
     def motion_hover(self, event):
         if self.measurement.empty: return
@@ -466,11 +476,13 @@ class mclass:
             vout = t['vout'].tolist()[0]
             p = vout ** 2 / 8
 
-            self.str_coordinates.set("power %s Wrms" % format(p, '.2f'))
+            self.txt_coordinates.config(state='normal')
+            self.txt_coordinates.delete('1.0', END)
+            self.txt_coordinates.insert(END, "power: %s Wrms - THD: " % format(p, '.2f').rjust(6, " "))
             for i, r in (df.loc[(df['vin'] == vin)]).iterrows():
-                self.str_coordinates.set(self.str_coordinates.get() + " - %s %% THD" % format(r['thd'], '.2f'))
-
-            self.str_coordinates.set(self.str_coordinates.get() + "\n (%s, %s)" % (format(event.xdata, '.2f'),y))
+                self.txt_coordinates.insert(END, "%s%% " % format(r['thd'], '.2f'), self.colors[int(r['id'])])
+            self.txt_coordinates.insert(END, "\n (%s, %s)" % (format(event.xdata, '.2f'), y))
+            self.txt_coordinates.config(state='disabled')
 
 window = Tk()
 start = mclass(window)

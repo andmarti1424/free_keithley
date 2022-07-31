@@ -1,6 +1,6 @@
 # some config
-SIM = 1
-DEBUG = 1
+SIM = 0
+DEBUG = 0
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1 # default amplitude for input signal in Vrms
@@ -35,87 +35,88 @@ class mclass:
         self.abort = 0
 
         # setup UI
+        self.window['bg'] = 'silver'
         self.colors=['white', 'salmon', 'deepskyblue', 'limegreen']
         self.str_title = StringVar()
 
         # title
         self.str_title.set("Keithley 2015 - Freq. response")
-        self.lbl_title = Label(window, textvariable=self.str_title, fg='#1C5AAC', font=('Helvetica 24 bold'))
+        self.lbl_title = Label(window, textvariable=self.str_title, fg='#1C5AAC', font=('Courier New', 24, 'bold'), background=self.window['bg'])
         self.lbl_title.pack(ipady=15, expand=False, side=TOP)
 
         # amplitude
-        self.lbl_amplitude = Label(window, text="input signal amplitude", font='Helvetica 18')
+        self.lbl_amplitude = Label(window, text="input signal amplitude", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_amplitude.place(x = 40, y = 203)
         self.str_amplitude = StringVar()
         self.str_amplitude.set(DEFAULT_INPUT_SIGNAL_AMPLITUDE)
-        self.etr_amplitude = Entry(window, textvariable=self.str_amplitude, font='Helvetica 18', width=6)
-        self.etr_amplitude.place(x = 280, y = 200)
+        self.etr_amplitude = Entry(window, textvariable=self.str_amplitude, font=('Courier New', 18), width=6)
+        self.etr_amplitude.place(x = 360, y = 200)
         self.etr_amplitude.focus_set()
         self.etr_amplitude.icursor(1)
-        self.lbl_amplitude_vrms = Label(window, text="Vrms", font='Helvetica 18')
-        self.lbl_amplitude_vrms.place(x = 370, y = 203)
+        self.lbl_amplitude_vrms = Label(window, text="Vrms", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_amplitude_vrms.place(x = 460, y = 203)
 
         # points per decade
-        self.lbl_points_decade = Label(window, text="points per decade", font='Helvetica 18')
+        self.lbl_points_decade = Label(window, text="points per decade", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_points_decade.place(x = 40, y = 263)
         self.str_points_decade = StringVar()
         self.str_points_decade.set(DEFAULT_POINTS_PER_DECADE)
-        self.etr_points_decade = Entry(window, textvariable=self.str_points_decade, font='Helvetica 18', width=3)
-        self.etr_points_decade.place(x = 280, y = 260)
+        self.etr_points_decade = Entry(window, textvariable=self.str_points_decade, font=('Courier New', 18), width=3)
+        self.etr_points_decade.place(x = 360, y = 260)
         #self.etr_points_decade.focus_set()
         self.etr_points_decade.icursor(1)
 
         # y max
-        self.lbl_maxy = Label(window, text="max value in Y axis", font='Helvetica 18')
+        self.lbl_maxy = Label(window, text="max value in Y axis", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_maxy.place(x = 40, y = 323)
-        self.lbl_maxy = Label(window, text="dB", font='Helvetica 18')
-        self.lbl_maxy.place(x = 370, y = 323)
+        self.lbl_maxy = Label(window, text="dB", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_maxy.place(x = 460, y = 323)
         self.str_maxy = StringVar()
         self.str_maxy.set(DEFAULT_MAXY)
-        self.etr_maxy = Entry(window, textvariable=self.str_maxy, font='Helvetica 18', width=6)
-        self.etr_maxy.place(x = 280, y = 320)
+        self.etr_maxy = Entry(window, textvariable=self.str_maxy, font=('Courier New', 18), width=6)
+        self.etr_maxy.place(x = 360, y = 320)
         #self.etr_maxy.focus_set()
         self.etr_maxy.icursor(1)
 
         # y min
-        self.lbl_miny = Label(window, text="min value in Y axis", font='Helvetica 18')
+        self.lbl_miny = Label(window, text="min value in Y axis", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_miny.place(x = 40, y = 383)
-        self.lbl_miny = Label(window, text="dB", font='Helvetica 18')
-        self.lbl_miny.place(x = 370, y = 383)
+        self.lbl_miny = Label(window, text="dB", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_miny.place(x = 460, y = 383)
         self.str_miny = StringVar()
         self.str_miny.set(DEFAULT_MINY)
-        self.etr_miny = Entry(window, textvariable=self.str_miny, font='Helvetica 18', width=6)
-        self.etr_miny.place(x = 280, y = 380)
+        self.etr_miny = Entry(window, textvariable=self.str_miny, font=('Courier New', 18), width=6)
+        self.etr_miny.place(x = 360, y = 380)
         #self.etr_miny.focus_set()
         self.etr_miny.icursor(1)
 
         # y steps
-        self.lbl_ysteps = Label(window, text="Y axis interval", font='Helvetica 18')
+        self.lbl_ysteps = Label(window, text="Y axis interval", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_ysteps.place(x = 40, y = 443)
         self.str_ysteps = StringVar()
         self.str_ysteps.set(DEFAULT_YSTEPS)
-        self.etr_ysteps = Entry(window, textvariable=self.str_ysteps, font='Helvetica 18', width=6)
-        self.etr_ysteps.place(x = 280, y = 440)
+        self.etr_ysteps = Entry(window, textvariable=self.str_ysteps, font=('Courier New', 18), width=6)
+        self.etr_ysteps.place(x = 360, y = 440)
         #self.etr_ysteps.focus_set()
         self.etr_ysteps.icursor(1)
 
         # details - Freq measured
         self.str_details = StringVar()
-        self.lbl_details = Label(window, textvariable=self.str_details, font='Helvetica 18 bold')
+        self.lbl_details = Label(window, textvariable=self.str_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
         self.lbl_details.place(x = 40, y = 1000)
 
         # coordinates
         self.str_coordinates = StringVar()
-        self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font='Helvetica 18 bold')
+        self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font=('Courier New', 18, 'bold'), background=self.window['bg'])
         self.lbl_coordinates.place(x = 710, y = 1000)
 
         # buttons
-        self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
+        self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
         self.but_quit.place(x=40, y=680)
-        self.but_start = Button(window, text="RUN", command=self.change_state, font='Helvetica 18')
-        self.but_start.place(x=165, y=680)
-        self.but_clear = Button(window, text="CLEAR", command=self.clear, font='Helvetica 18')
-        self.but_clear.place(x=280, y=680)
+        self.but_start = Button(window, text=" RUN ", command=self.change_state, font=('Courier New', 18))
+        self.but_start.place(x=160, y=680)
+        self.but_clear = Button(window, text="CLEAR", command=self.clear, font=('Courier New', 18))
+        self.but_clear.place(x=293, y=680)
         #end of ui
 
         if SIM:
@@ -227,7 +228,7 @@ class mclass:
             self.str_details.set("Please clear plot before making a new measurement")
             return
 
-        if (self.but_start['text'] == "RUN"):
+        if (self.but_start['text'] == " RUN "):
             self.etr_amplitude.config(state = 'disabled')
             self.etr_ysteps.config(state = 'disabled')
             self.etr_miny.config(state = 'disabled')
@@ -282,7 +283,7 @@ class mclass:
                     self.measurement.loc[cond, 'vca'] = float(0)
 
                     self.str_details.set("ABORTED")
-                    self.but_start['text'] = "RUN"
+                    self.but_start['text'] = " RUN "
                     self.abort = 0
                     self.etr_amplitude.config(state = 'normal')
                     self.etr_ysteps.config(state = 'normal')
@@ -319,7 +320,7 @@ class mclass:
                 if not SIM: self.replot()
 
         self.plots += 1
-        self.but_start['text'] = "RUN"
+        self.but_start['text'] = " RUN "
         self.str_details.set("DONE")
         self.etr_amplitude.config(state = 'normal')
         self.etr_ysteps.config(state = 'normal')
@@ -338,6 +339,7 @@ class mclass:
 
     def plot(self):
         self.fig, ax = plt.subplots(figsize=(12, 7))
+        self.fig.set_facecolor(self.window['bg'])
         self.fig.tight_layout(rect=[0.05, 0.08, 0.95, 0.95])
         plt.rcParams['toolbar'] = 'None'
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)

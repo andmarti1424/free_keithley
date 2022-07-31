@@ -1,5 +1,5 @@
 # some config
-SIM = 1
+SIM = 0
 DEBUG = 0
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
@@ -8,10 +8,10 @@ DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 2 # default amplitude for input signal in Vrms
 
 #TODO:
+#add validations of input values. see change_state function
 #export data measured
 #save plot?
-#add validations of input values. see change_state function
-#test case in which you change points per decade between two different plots
+#test case in which you change points per decade between two different measurements
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,91 +32,93 @@ class mclass:
         self.plots = 0 # number of plots done. can be up to 4
         self.abort = 0
 
-
         # setup UI
-        self.colors=['white', 'salmon', 'deepskyblue', 'limegreen']
-        self.str_title = StringVar()
+        self.colors=['whitesmoke', 'crimson', 'deepskyblue', 'limegreen']
+        self.window['bg'] = 'silver'
 
         # TYPE OF MEASUREMENT radio button
-        self.lbl_harm_qty = Label(window, text = "Measure:", font='Helvetica 18')
+        self.lbl_harm_qty = Label(window, text = "Measure:", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_harm_qty.place(x = 40, y = 123)
         self.str_measurement_type = StringVar()
         self.rad_var = IntVar()
         self.rad_values = ["THD", "THD+N"]
-        self.rad_thd = Radiobutton(window, variable=self.rad_var, text=self.rad_values[0], value=0, font='Helvetica 18', command=self.change_measurement_type)
+        self.rad_thd = Radiobutton(window, variable=self.rad_var, text=self.rad_values[0], value=0, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_thd.invoke()
         self.rad_thd.select()
         self.rad_thd.place(x = 244, y = 103)
-        self.rad_thdn = Radiobutton(window, variable=self.rad_var, text=self.rad_values[1], value=1, font='Helvetica 18', command=self.change_measurement_type)
+        self.rad_thdn = Radiobutton(window, variable=self.rad_var, text=self.rad_values[1], value=1, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_thdn.place(x = 244, y = 140)
 
         # title
+        self.str_title = StringVar()
         self.str_title.set("Keithley 2015 - %s vs Freq. measurement" % self.rad_values[0])
-        self.lbl_title = Label(window, textvariable=self.str_title, fg='#1C5AAC', font=('Helvetica 24 bold'))
+        self.lbl_title = Label(window, textvariable=self.str_title, fg='#1C5AAC', font=('Courier New', 24, 'bold'), background=self.window['bg'])
         self.lbl_title.pack(ipady=15, expand=False, side=TOP)
 
         # amplitude
-        self.lbl_amplitude = Label(window, text="input signal amplitude", font='Helvetica 18')
+        self.lbl_amplitude = Label(window, text="input signal amplitude", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_amplitude.place(x = 40, y = 203)
         self.str_amplitude = StringVar()
         self.str_amplitude.set(DEFAULT_INPUT_SIGNAL_AMPLITUDE)
-        self.etr_amplitude = Entry(window, textvariable=self.str_amplitude, font='Helvetica 18', width=3)
-        self.etr_amplitude.place(x = 280, y = 200)
+        self.etr_amplitude = Entry(window, textvariable=self.str_amplitude, font=('Courier New', 18), width=3)
+        self.etr_amplitude.place(x = 360, y = 200)
         self.etr_amplitude.focus_set()
         self.etr_amplitude.icursor(1)
-        self.lbl_amplitude_vrms = Label(window, text="Vrms", font='Helvetica 18')
-        self.lbl_amplitude_vrms.place(x = 330, y = 203)
+        self.lbl_amplitude_vrms = Label(window, text="Vrms", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_amplitude_vrms.place(x = 410, y = 203)
 
         # points per decade
-        self.lbl_points_decade = Label(window, text="points per decade", font='Helvetica 18')
+        self.lbl_points_decade = Label(window, text="points per decade", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_points_decade.place(x = 40, y = 263)
         self.str_points_decade = StringVar()
         self.str_points_decade.set(DEFAULT_POINTS_PER_DECADE)
-        self.etr_points_decade = Entry(window, textvariable=self.str_points_decade, font='Helvetica 18', width=3)
-        self.etr_points_decade.place(x = 280, y = 260)
+        self.etr_points_decade = Entry(window, textvariable=self.str_points_decade, font=('Courier New', 18), width=3)
+        self.etr_points_decade.place(x = 360, y = 260)
         #self.etr_points_decade.focus_set()
         self.etr_points_decade.icursor(1)
 
 
         # number of harmonics
-        self.lbl_harm_qty = Label(window, text="number of harmonics", font='Helvetica 18')
+        self.lbl_harm_qty = Label(window, text="number of harmonics", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_harm_qty.place(x = 40, y = 323)
         self.str_harm_qty = StringVar()
         self.str_harm_qty.set(DEFAULT_QTY_HARM)
-        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font='Helvetica 18', width=3)
-        self.etr_harm_qty.place(x = 280, y = 320)
+        self.etr_harm_qty = Entry(window, textvariable=self.str_harm_qty, font=('Courier New', 18), width=3)
+        self.etr_harm_qty.place(x = 360, y = 320)
         #self.etr_harm_qty.focus_set()
         self.etr_harm_qty.icursor(1)
 
         # y max
-        self.lbl_maxy = Label(window, text="max value in Y axis", font='Helvetica 18')
+        self.lbl_maxy = Label(window, text="max value in Y axis", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_maxy.place(x = 40, y = 383)
-        self.lbl_maxy = Label(window, text="%", font='Helvetica 18')
-        self.lbl_maxy.place(x = 330, y = 383)
+        self.lbl_maxy = Label(window, text="%", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_maxy.place(x = 410, y = 383)
         self.str_maxy = StringVar()
         self.str_maxy.set(DEFAULT_MAXY)
-        self.etr_maxy = Entry(window, textvariable=self.str_maxy, font='Helvetica 18', width=3)
-        self.etr_maxy.place(x = 280, y = 380)
+        self.etr_maxy = Entry(window, textvariable=self.str_maxy, font=('Courier New', 18), width=3)
+        self.etr_maxy.place(x = 360, y = 380)
         #self.etr_maxy.focus_set()
         self.etr_maxy.icursor(1)
 
         # details - Freq measured
         self.str_details = StringVar()
-        self.lbl_details = Label(window, textvariable=self.str_details, font='Helvetica 18 bold')
+        self.lbl_details = Label(window, textvariable=self.str_details, font=('Courier New', 18), background=self.window['bg'])
         self.lbl_details.place(x = 40, y = 1000)
 
         # coordinates
-        self.str_coordinates = StringVar()
-        self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font='Helvetica 18 bold')
-        self.lbl_coordinates.place(x = 710, y = 1000)
+        self.txt_coordinates = Text(bd=0, bg=window['bg'], height=3, wrap="none", state="normal", font=('Courier New', 18), background=self.window['bg'])
+        self.txt_coordinates.place(x = 710, y = 1000)
+        self.txt_coordinates.config(highlightthickness = 0, borderwidth=0)
+        for c in self.colors:
+            self.txt_coordinates.tag_configure(c, foreground=c)
 
         # buttons
-        self.but_quit = Button(window, text="QUIT", command=self.quit, font='Helvetica 18')
+        self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 16), background=self.window['bg'])
         self.but_quit.place(x=40, y=680)
-        self.but_start = Button(window, text="RUN", command=self.change_state, font='Helvetica 18')
-        self.but_start.place(x=165, y=680)
-        self.but_clear = Button(window, text="CLEAR", command=self.clear, font='Helvetica 18')
-        self.but_clear.place(x=280, y=680)
+        self.but_start = Button(window, text=" RUN ", command=self.change_state, font=('Courier New', 16), background=self.window['bg'])
+        self.but_start.place(x=160, y=680)
+        self.but_clear = Button(window, text="CLEAR", command=self.clear, font=('Courier New', 16), background=self.window['bg'])
+        self.but_clear.place(x=293, y=680)
         #end of ui
 
         if SIM:
@@ -226,6 +228,9 @@ class mclass:
         #self.str_title.set("Keithley 2015 - %s vs Freq. measurement" % self.str_measurement_type.get())
 
     def clear(self):
+        self.txt_coordinates.config(state='normal')
+        self.txt_coordinates.delete('1.0', END)
+        self.txt_coordinates.config(state='disabled')
         self.measurement = pd.DataFrame(columns = ['id', 'freq', 'thd'])
         self.plots = 0 # number of plots done. can be up to 4
         self.plot()
@@ -243,7 +248,7 @@ class mclass:
         #TODO str_amplitude must be numeric and less than 10 Vrms
         #TODO str_harm_qty must be numeric and less than 64
 
-        if (self.but_start['text'] == "RUN"):
+        if (self.but_start['text'] == " RUN "):
             self.etr_points_decade.config(state = 'disabled')
             self.etr_maxy.config(state = 'disabled')
             self.but_start['text'] = "ABORT"
@@ -253,6 +258,7 @@ class mclass:
             self.rad_thdn.config(state = 'disabled')
             self.etr_harm_qty.config(state = 'disabled')
             self.etr_amplitude.config(state = 'disabled')
+            self.window.update_idletasks()
 
             #store each decade freq (range)
             self.decades_freq = pd.DataFrame(columns = ['freq'])
@@ -300,7 +306,7 @@ class mclass:
                     self.measurement.loc[cond, 'thd'] = float(0)
 
                     self.str_details.set("ABORTED")
-                    self.but_start['text'] = "RUN"
+                    self.but_start['text'] = " RUN "
                     self.abort = 0
                     self.etr_points_decade.config(state = 'normal')
                     self.etr_maxy.config(state = 'normal')
@@ -331,7 +337,7 @@ class mclass:
                 self.replot()
             #self.replot()
             self.plots += 1
-            self.but_start['text'] = "RUN"
+            self.but_start['text'] = " RUN "
             self.str_details.set("DONE")
             self.etr_points_decade.config(state = 'normal')
             self.etr_maxy.config(state = 'normal')
@@ -351,7 +357,7 @@ class mclass:
         plt.rcParams['toolbar'] = 'None'
         #ax.tick_params(labeltop=False, labelright=True, labelsize=14)
         #ax.set(xscale="log")
-        #ax.set_facecolor('xkcd:black')
+        ax.set_facecolor('xkcd:black')
         #ax.set_xlabel('frequency, Hz', fontsize=20, loc='center')
         ax.set_ylabel('%s, %%' % self.str_measurement_type.get(), fontsize=20, loc='center')
         #ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
@@ -384,6 +390,7 @@ class mclass:
         self.fig, ax = plt.subplots(figsize=(14, 9))
         self.fig.tight_layout()
         plt.rcParams['toolbar'] = 'None'
+        self.fig.set_facecolor(self.window['bg'])
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.set(xscale="log")
         ax.set_facecolor('xkcd:black')
@@ -399,7 +406,7 @@ class mclass:
         ax.plot(self.measurement['freq'], self.measurement['thd'], color=self.colors[0])
         ax.legend(self.measurement['id'].astype('int').unique())
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
-        canvas.get_tk_widget().place(relx=.6, rely=.48, anchor="c")
+        canvas.get_tk_widget().place(relx=.61, rely=.48, anchor="c")
         if draw:
             canvas.draw()
             canvas.start_event_loop(0.05)
@@ -416,14 +423,15 @@ class mclass:
             y = format(event.ydata, '.2f')
             freq = df.iloc[(df['freq']-x).abs().argsort()[:1]]['freq'].tolist()[0]
 
+            self.txt_coordinates.config(state='normal')
             #show coordinates of cursor
             #self.str_coordinates.set("found %s %s" % (x, y))
-
-            self.str_coordinates.set("freq. %s Hz" % freq)
+            self.txt_coordinates.delete('1.0', END)
+            self.txt_coordinates.insert(END, "freq. %s Hz - THD: " % format(freq, '.2f').rjust(8, " "))
             for i, r in (df.loc[(df['freq'] == freq)]).iterrows():
-                self.str_coordinates.set(self.str_coordinates.get() + " - %s %% THD" % format(r['thd'], '.2f'))
-
-            self.str_coordinates.set(self.str_coordinates.get() + "\n (%s, %s)" % (format(event.xdata, '.2f'),y))
+                self.txt_coordinates.insert(END, "%s%% " % format(r['thd'], '.2f'), self.colors[int(r['id'])])
+            self.txt_coordinates.insert(END, "\n (%s, %s)" % (format(event.xdata, '.2f'), y))
+            self.txt_coordinates.config(state='disabled')
 
 window = Tk()
 start = mclass(window)
