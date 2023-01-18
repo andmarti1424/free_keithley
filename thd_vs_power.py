@@ -12,7 +12,6 @@ DEFAULT_FREQ = 1000
 
 #TODO:
 #add validations of user input
-#export data measured
 #add protection (max THD value)
 #test case in which you change points in range between two different measurements
 
@@ -23,6 +22,7 @@ from math import log10
 import serial
 import time
 from tkinter import *
+from tkinter import messagebox
 from matplotlib.figure import Figure
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -47,11 +47,11 @@ class mclass:
         self.rad_var = IntVar()
         self.rad_values = ["THD", "THD+N"]
         self.rad_thd = Radiobutton(window, variable=self.rad_var, text=self.rad_values[0], value=0, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
-        self.rad_thd.invoke()
-        self.rad_thd.select()
         self.rad_thd.place(x = 244, y = 103)
         self.rad_thdn = Radiobutton(window, variable=self.rad_var, text=self.rad_values[1], value=1, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_thdn.place(x = 244, y = 140)
+        self.rad_thdn.invoke()
+        self.rad_thdn.select()
 
         # title
         self.str_title.set("Keithley 2015 - %s vs Power" % self.rad_values[0])
@@ -152,8 +152,11 @@ class mclass:
         self.but_start.place(x=160, y=680)
         self.but_clear = Button(window, text="CLEAR", command=self.clear, font=('Courier New', 18))
         self.but_clear.place(x=293, y=680)
+        self.but_export = Button(window, text="EXPORT", command=self.export, font=('Courier New', 18))
+        self.but_export.place(x=420, y=680)
         #end of ui
 
+        self.measurement = pd.DataFrame(columns = ['id', 'vin', 'vout', 'thd', 'impedance'])
         if SIM:
             np.random.seed(42) # for data sim
         else:
@@ -260,6 +263,13 @@ class mclass:
         self.str_measurement_type.set(self.rad_values[int(self.rad_var.get())])
         #self.str_title.set("Keithley 2015 - %s vs Power" % self.str_measurement_type.get())
 
+    def export(self):
+        if not len(self.measurement):
+            messagebox.showerror("Export error", "No data to export")
+        else:
+            self.measurement.to_csv('thd_power.csv', index=False)
+            messagebox.showinfo("Export", "Export completed - %s" % 'thd_power.csv')
+
     def clear(self):
         self.txt_coordinates.config(state='normal')
         self.txt_coordinates.delete('1.0', END)
@@ -288,6 +298,7 @@ class mclass:
             self.but_start['text'] = "ABORT"
             self.but_quit.config(state = 'disabled')
             self.but_clear.config(state = 'disabled')
+            self.but_export.config(state = 'disabled')
             self.window.update_idletasks()
 
             # create data structure
@@ -346,6 +357,7 @@ class mclass:
                     self.etr_freq.config(state = 'normal')
                     self.but_quit.config(state = 'normal')
                     self.but_clear.config(state = 'normal')
+                    self.but_export.config(state = 'normal')
                     return
 
                 self.str_details.set("Measuring THD at " + format(sm['vin'][vin], ".4f") + " Vrms input")
@@ -392,6 +404,7 @@ class mclass:
             self.etr_freq.config(state = 'normal')
             self.but_quit.config(state = 'normal')
             self.but_clear.config(state = 'normal')
+            self.but_export.config(state = 'normal')
 
             if DEBUG: print("DONE")
 
