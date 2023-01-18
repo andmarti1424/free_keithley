@@ -5,7 +5,7 @@ DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_MAXY = 5 # default max value for Y axis in %
 DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
-DEFAULT_INPUT_SIGNAL_AMPLITUDE = 2 # default amplitude for input signal in Vrms
+DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1.5 # default amplitude for input signal in Vrms
 
 #TODO:
 #add validations of input values. see change_state function
@@ -350,6 +350,9 @@ class mclass:
             self.but_quit.config(state = 'normal')
             self.but_clear.config(state = 'normal')
             if DEBUG: print("DONE")
+            if not SIM:
+                if DEBUG: print("Turning off SIGGEN")
+                self.send_cmd(':OUTP OFF') #;turn off source
 
     def replot(self):
         self.fig.tight_layout()

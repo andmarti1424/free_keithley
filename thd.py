@@ -1,5 +1,5 @@
 # Some settings
-SIM = 0 # do not interact with equipment, just sim data
+SIM = 1 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
 DISPLAY = 1 # display on or off
 UPDATE_INTERVAL= 1 # only used on sim.
@@ -456,10 +456,13 @@ class mclass:
 
     def change_state(self):
         ## TODO: check here that internal WG freq is valid
-        ## TODO: check qty of harm is numberic
+        ## TODO: check qty of harm is numeric
         ## TODO: check ohms is numeric and 4, 8 or 16 ohms
 
         if self.running == True:
+            if not SIM and self.chk_SIGGEN_var.get() == 1:
+                if DEBUG: print("Turning off SIGGEN")
+                self.send_cmd(':OUTP OFF') #;turn off source
             self.running = False
             self.but_start['text'] = "START"
             self.etr_harm_qty.config(state= "normal")
@@ -472,6 +475,7 @@ class mclass:
             self.etr_SIGGEN_amp.config(state = 'normal')
             self.etr_resistance.config(state = 'normal')
             self.etr_harm_qty.focus_set()
+
         else:
             self.measure_vca()
             self.enable_siggen()

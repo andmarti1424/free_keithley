@@ -395,6 +395,10 @@ class mclass:
 
             if DEBUG: print("DONE")
 
+            if not SIM:
+                if DEBUG: print("Turning off SIGGEN")
+                self.send_cmd(':OUTP OFF') #;turn off source
+
     def replot(self):
         self.fig.tight_layout()
 #        self.fig.tight_layout(rect=[0.08, 0.08, 0.95, 0.95])
@@ -444,7 +448,7 @@ class mclass:
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xticks([0.01, 0.1, 1, 10, 100], ["0.01", "0.1", "1", "10", "100"])
-        ax.set_xlim([0.1, 100])
+        ax.set_xlim([0.1, 10])
         ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         #ax.xaxis.set_minor_locator(AutoMinorLocator())

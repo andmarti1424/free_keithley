@@ -1,6 +1,9 @@
+# Modification 18/01/2023:
+# reference at 0dB is amplification at 1000Hz. Not the input signal voltage.
+
 # some config
 SIM = 0
-DEBUG = 0
+DEBUG = 1
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1 # default amplitude for input signal in Vrms
@@ -273,6 +276,12 @@ class mclass:
             #setup equipment for measurement VCA
             if not SIM: self.setup_vca_measurement()
 
+            # reference at 0dB is amplification at 1000Hz
+            if not SIM:
+                self.set_siggen_freq(1000)
+                value = format(float(self.measure_vca()), '.6f')
+                ref = value
+
             #print(self.measurement)
             # for each frequency, measure THD, save it in data structure and plot
             sm = self.measurement.loc[(self.measurement['id'] == self.plots)]
@@ -306,7 +315,8 @@ class mclass:
                 if not SIM: value = format(float(self.measure_vca()), '.6f')
 
                 #take SIGGEN output signal as reference
-                ref = format(float(self.str_amplitude.get()), '.6f')
+                #ref = format(float(self.str_amplitude.get()), '.6f')
+                #Se comenta lo anterior. ref debe ser la respuesta en 1000Hz.
 
                 if not SIM:
                     #if DEBUG: print("value: " + value)
