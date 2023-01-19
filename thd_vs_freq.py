@@ -1,15 +1,15 @@
 # some config
 SIM = 0
 DEBUG = 0
-DISPLAY = 0 # display on or off
+DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_MAXY = 5 # default max value for Y axis in %
 DEFAULT_QTY_HARM = 6 # default number of harmonics to use for THD measurement of each freq.
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1.5 # default amplitude for input signal in Vrms
 
 #TODO:
-#add validations of input values. see change_state function
 #export data measured
+#add validations of input values. see change_state function
 #save plot?
 #test case in which you change points per decade between two different measurements
 
@@ -222,13 +222,16 @@ class mclass:
 
     def measure_thd(self):
         #time.sleep(0.05)
-        if DEBUG: print("measure THD")
+        if DEBUG: print("measured THD/THDN:")
         # return dist in percent
         res = self.send_cmd(':READ?')
         res = float(format(float(res), '.3f'))
-        if DEBUG: print("             % dist: " + str(res) + " *")
-        #self.dist_perc = format(float(self.send_cmd(':SENS:DIST:THD?')), '.6f')
-        #if DEBUG: print("%% measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_perc + " %")
+        if DEBUG:
+            print("             % dist: " + str(res) + " *")
+            self.thd_dist_perc = format(float(self.send_cmd(':SENS:DIST:THD?')), '.6f')
+            print("%% THD  measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.thd_dist_perc + " %")
+            self.thdn_dist_perc = format(float(self.send_cmd(':SENS:DIST:THDN?')), '.6f')
+            print("%% THDN measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.thdn_dist_perc + " %")
         return res
 
     def quit(self):

@@ -1,3 +1,6 @@
+#SOURCE:
+#https://download.tek.com/manual/2015-900-01(F-Aug2003)(User).pdf
+
 # Modification 18/01/2023:
 # reference at 0dB is amplification at 1000Hz. Not the input signal voltage.
 # added csv data export
@@ -9,7 +12,7 @@
 # some config
 SIM = 0
 DEBUG = 0
-DISPLAY = 0 # display on or off
+DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1 # default amplitude for input signal in Vrms
 DEFAULT_MAXY = 9 # max value in y axis: 10dB
@@ -73,7 +76,7 @@ class mclass:
         self.etr_points_decade.icursor(1)
 
         # y max
-        self.lbl_maxy = Label(window, text="max value in Y axis", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_maxy = Label(window, text="Y scale increase", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_maxy.place(x = 40, y = 323)
         self.lbl_maxy = Label(window, text="dB", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_maxy.place(x = 460, y = 323)
@@ -85,7 +88,7 @@ class mclass:
         self.etr_maxy.icursor(1)
 
         # y min
-        self.lbl_miny = Label(window, text="min value in Y axis", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_miny = Label(window, text="Y scale decrease", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_miny.place(x = 40, y = 383)
         self.lbl_miny = Label(window, text="dB", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_miny.place(x = 460, y = 383)
