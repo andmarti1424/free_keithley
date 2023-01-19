@@ -1,3 +1,6 @@
+#SOURCE:
+#https://download.tek.com/manual/2015-900-01(F-Aug2003)(User).pdf
+
 # Some settings
 SIM = 1 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal

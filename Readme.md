@@ -3,10 +3,10 @@ Plotting / measurement software for Keithley 2015 THD multimeter
 
 ## Utilities
  - THD measurement: THD/THDN and distortion of each harmonic
+ - THD vs Power
  - Vdc logger
  - THD vs Freq.
  - Freq. response plot
- - THD vs Power
 
 ## Requirements
  - `python 3.10+`
@@ -15,9 +15,14 @@ Plotting / measurement software for Keithley 2015 THD multimeter
  - `tkinter (tk)`
 
 ## Usage
-```python thd.py```
+```python thd_vs_power.py```
 or
+```python thd.py```
+or..
+```python freq_resp.py```
 ```python logger.py```
+```python thd_vs_freq.py```
+
 
 ## Screenshots
 ![demo image](screenshots/a3.jpg?raw=true)

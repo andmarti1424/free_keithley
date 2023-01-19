@@ -15,6 +15,9 @@ DEFAULT_FREQ = 1000
 #add protection (max THD value)
 #test case in which you change points in range between two different measurements
 
+#SOURCE:
+#https://download.tek.com/manual/2015-900-01(F-Aug2003)(User).pdf
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -135,11 +138,11 @@ class mclass:
         # details - input sweep
         self.str_details = StringVar()
         self.lbl_details = Label(window, textvariable=self.str_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
-        self.lbl_details.place(x = 40, y = 1000)
+        self.lbl_details.place(x = 40, y = 900)
 
         # coordinates
         self.txt_coordinates = Text(bd=0, bg=window['bg'], height=3, wrap="none", state="normal", font=('Courier New', 18), background=self.window['bg'])
-        self.txt_coordinates.place(x = 710, y = 1000)
+        self.txt_coordinates.place(x = 710, y = 900)
         self.txt_coordinates.config(highlightthickness = 0, borderwidth=0)
         for c in self.colors:
             self.txt_coordinates.tag_configure(c, foreground=c)
@@ -221,7 +224,6 @@ class mclass:
     def enable_siggen(self):
         if DEBUG: print("Setting up internal SIGGEN")
         if SIM: return
-        #self.send_cmd(':SENS:DIST:FREQ:AUTO OFF')
         self.send_cmd(':OUTP:IMP HIZ') # set high impedance source
         self.send_cmd(':OUTP:FREQ ' + self.str_freq.get()) # set frequency in Hz
         self.send_cmd(':OUTP:CHAN2 ISINE') # select inverted sine
@@ -251,7 +253,6 @@ class mclass:
         if DEBUG: print("% dist: " + str(res))
         #self.dist_perc = format(float(self.send_cmd(':SENS:DIST:THD?')), '.6f')
         #if DEBUG: print("measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_perc + " %")
-        #return self.dist_perc
         return res
 
     def quit(self):

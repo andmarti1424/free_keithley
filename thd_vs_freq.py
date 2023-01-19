@@ -1,10 +1,10 @@
 # some config
 SIM = 0
 DEBUG = 0
-DISPLAY = 1 # display on or off
+DISPLAY = 0 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_MAXY = 5 # default max value for Y axis in %
-DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
+DEFAULT_QTY_HARM = 6 # default number of harmonics to use for THD measurement of each freq.
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1.5 # default amplitude for input signal in Vrms
 
 #TODO:
@@ -13,6 +13,9 @@ DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1.5 # default amplitude for input signal in Vrm
 #save plot?
 #test case in which you change points per decade between two different measurements
 
+#SOURCE:
+#https://download.tek.com/manual/2015-900-01(F-Aug2003)(User).pdf
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -20,6 +23,7 @@ from math import log10
 import serial
 import time
 from tkinter import *
+from tkinter import messagebox
 from matplotlib.figure import Figure
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -43,11 +47,11 @@ class mclass:
         self.rad_var = IntVar()
         self.rad_values = ["THD", "THD+N"]
         self.rad_thd = Radiobutton(window, variable=self.rad_var, text=self.rad_values[0], value=0, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
-        self.rad_thd.invoke()
-        self.rad_thd.select()
         self.rad_thd.place(x = 244, y = 103)
         self.rad_thdn = Radiobutton(window, variable=self.rad_var, text=self.rad_values[1], value=1, font=('Courier New', 18), command=self.change_measurement_type, background=self.window['bg'])
         self.rad_thdn.place(x = 244, y = 140)
+        self.rad_thdn.invoke()
+        self.rad_thdn.select()
 
         # title
         self.str_title = StringVar()
@@ -103,11 +107,11 @@ class mclass:
         # details - Freq measured
         self.str_details = StringVar()
         self.lbl_details = Label(window, textvariable=self.str_details, font=('Courier New', 18), background=self.window['bg'])
-        self.lbl_details.place(x = 40, y = 1000)
+        self.lbl_details.place(x = 40, y = 900)
 
         # coordinates
         self.txt_coordinates = Text(bd=0, bg=window['bg'], height=3, wrap="none", state="normal", font=('Courier New', 18), background=self.window['bg'])
-        self.txt_coordinates.place(x = 710, y = 1000)
+        self.txt_coordinates.place(x = 710, y = 900)
         self.txt_coordinates.config(highlightthickness = 0, borderwidth=0)
         for c in self.colors:
             self.txt_coordinates.tag_configure(c, foreground=c)
@@ -120,6 +124,8 @@ class mclass:
         self.but_start.place(x=160, y=680)
         self.but_clear = Button(window, text="CLEAR", command=self.clear, font=('Courier New', 16), background=self.window['bg'])
         self.but_clear.place(x=293, y=680)
+        self.but_export = Button(window, text="EXPORT", command=self.export, font=('Courier New', 16), background=self.window['bg'])
+        self.but_export.place(x=420, y=680)
         #end of ui
 
         if SIM:
@@ -186,7 +192,6 @@ class mclass:
     def enable_siggen(self):
         if DEBUG: print("Setting up internal SIGGEN")
         if not SIM:
-            #self.send_cmd(':SENS:DIST:FREQ:AUTO OFF')
             self.send_cmd(':OUTP:IMP HIZ') #;set high impedance source
             self.send_cmd(':OUTP:AMPL ' + self.str_amplitude.get()) #;set amplitude in Vrms
             self.send_cmd(':OUTP:CHAN2 ISINE') #;select inverted sine
@@ -194,7 +199,12 @@ class mclass:
     def set_siggen_freq(self, freq):
         if DEBUG: print("Setting freq to %s" % freq)
         if not SIM:
+            #self.setup_thd_measurement()
+            #self.send_cmd(':SENS:DIST:FREQ:SET ' + str(freq))
             self.send_cmd(':OUTP:FREQ ' + str(freq)) #;set frequency in Hz
+            self.send_cmd(':OUTP:IMP HIZ') #;set high impedance source
+            self.send_cmd(':OUTP:AMPL ' + self.str_amplitude.get()) #;set amplitude in Vrms
+            self.send_cmd(':OUTP:CHAN2 ISINE') #;select inverted sine
             self.send_cmd(':OUTP ON') #;turn on source
 
     def setup_thd_measurement(self):
@@ -207,17 +217,19 @@ class mclass:
         self.send_cmd(':SENS:DIST:SFIL NONE')
         self.send_cmd(':SENS:DIST:RANG:AUTO ON')
         self.send_cmd(':SENS:DIST:FREQ:AUTO ON')
+        #self.send_cmd(':SENS:DIST:FREQ:ACQ')
+        #self.send_cmd(':SENS:DIST:FREQ:AUTO OFF')
 
     def measure_thd(self):
+        #time.sleep(0.05)
         if DEBUG: print("measure THD")
         # return dist in percent
         res = self.send_cmd(':READ?')
         res = float(format(float(res), '.3f'))
-        if DEBUG: print("% dist: " + str(res))
-        self.dist_perc = format(float(self.send_cmd(':SENS:DIST:THD?')), '.6f')
-        if DEBUG: print("measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_perc + " %")
+        if DEBUG: print("             % dist: " + str(res) + " *")
+        #self.dist_perc = format(float(self.send_cmd(':SENS:DIST:THD?')), '.6f')
+        #if DEBUG: print("%% measured " + self.rad_values[int(self.rad_var.get())] + ": " + self.dist_perc + " %")
         return res
-        #return self.dist_perc
 
     def quit(self):
         if (not SIM and self.ser.isOpen()):
@@ -255,6 +267,7 @@ class mclass:
             self.but_start['text'] = "ABORT"
             self.but_quit.config(state = 'disabled')
             self.but_clear.config(state = 'disabled')
+            self.but_export.config(state = 'disabled')
             self.rad_thd.config(state = 'disabled')
             self.rad_thdn.config(state = 'disabled')
             self.etr_harm_qty.config(state = 'disabled')
@@ -318,11 +331,12 @@ class mclass:
                     self.etr_amplitude.focus_set()
                     self.but_quit.config(state = 'normal')
                     self.but_clear.config(state = 'normal')
+                    self.but_export.config(state = 'normal')
                     return
 
                 self.str_details.set("Measuring: " + format(sm['freq'][i], ".2f") + " Hz")
                 #if DEBUG: print("Measuring: " , format(sm['freq'][i], ".2f") , " Hz")
-                self.lbl_details.place(x = 40, y = 880)
+                self.lbl_details.place(x = 40, y = 900)
                 if SIM:
                     value = 0
                     if sm['thd'].notnull()[i] and i > 0: value = sm['thd'][i]
@@ -349,10 +363,18 @@ class mclass:
             self.etr_amplitude.focus_set()
             self.but_quit.config(state = 'normal')
             self.but_clear.config(state = 'normal')
+            self.but_export.config(state = 'normal')
             if DEBUG: print("DONE")
             if not SIM:
                 if DEBUG: print("Turning off SIGGEN")
                 self.send_cmd(':OUTP OFF') #;turn off source
+
+    def export(self):
+        if not len(self.measurement):
+            messagebox.showerror("Export error", "No data to export")
+        else:
+            self.measurement.to_csv('thd_freq.csv', index=False)
+            messagebox.showinfo("Export", "Export completed - %s" % 'thd_freq.csv')
 
     def replot(self):
         self.fig.tight_layout()
@@ -391,7 +413,7 @@ class mclass:
         plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
     def plot(self, draw = 1):
-        self.fig, ax = plt.subplots(figsize=(13, 9))
+        self.fig, ax = plt.subplots(figsize=(13, 7))
         self.fig.tight_layout()
         plt.rcParams['toolbar'] = 'None'
         self.fig.set_facecolor(self.window['bg'])
