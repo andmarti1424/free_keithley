@@ -1,17 +1,18 @@
+# TODO:
+#add entry box to set WINDOW TIME
+#add combo to set measuring speed: NPLC
+#add option to setup max value in y axis
+#save plot?
+
+#SOURCE:
+#https://download.tek.com/manual/2015-900-01(F-Aug2003)(User).pdf
+
 # settings
-SIM = 0 # do not interact with equipment, just sim data
+SIM = 1 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
 DISPLAY = 1 # display on or off
-WINDOW_TIME = 10000 # in ms
+WINDOW_TIME = 3000 # in ms
 REFRESH_TIME = 0.05 # in seconds. Used only on simulation
-
-# TODO:
-#add check to avoid moving window. will make measuring slower over time. Clear button should make it quicker again.
-#clear button
-#add combo to setup measuring speed: NPLC
-#add option to setup max value in y axis
-#export data measured
-#save plot?
 
 import matplotlib.dates
 import matplotlib.pyplot as plt
@@ -23,6 +24,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 matplotlib.use('TkAgg')
 from tkinter import *
+from tkinter import messagebox
 import serial
 from matplotlib.ticker import AutoMinorLocator
 #, FormatStrFormatter
@@ -33,9 +35,8 @@ class mclass:
         self.window = window
         self.continuePlotting = False
         self.plot_packed = False
-        self.fig = Figure(figsize=(9,9))
+        self.fig = Figure(figsize=(13,9))
         self.ax = self.fig.add_subplot(111)
-        self.fig.canvas = FigureCanvasTkAgg(self.fig, master=window)
         np.random.seed(42)
 
         self.title = Label(window, text='Keithley 2015 - Vdc Logger', fg='#1C5AAC', font=('Courier New', 24, 'bold'))
@@ -55,14 +56,26 @@ class mclass:
         self.std_value = Label(window, text='', fg='#1C5AAC', font=('Courier New', 16, 'bold'))
         self.std_value.place(x=150, y=400)
 
+        #moving window checkbox
+        self.chk_moving_var = IntVar()
+        self.chk_moving = Checkbutton(window, text='Moving window', command='', variable=self.chk_moving_var,
+                                      fg='#1C5AAC', font=('Courier New', 16, 'bold'), onvalue=1, offvalue=0)
+        self.chk_moving.select()
+        self.chk_moving.place(x=150, y=780)
+
+
         #BUTTONS
         self.button_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
         self.button_quit.place(x=40, y=680)
         self.button_start = Button(window, text="START", command=self.change_state, font=('Courier New', 18))
         self.button_start.place(x=160, y=680)
-        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font=('Courier New', 18), state='disabled')
+        self.button_clear = Button(window, text="CLEAR", command=self.clear_chart, font=('Courier New', 18), state='normal')
         self.button_clear.place(x=293, y=680)
+        self.but_export = Button(window, text="EXPORT", command=self.export, font=('Courier New', 18))
+        self.but_export.place(x=420, y=680)
         #end of ui
+
+        self.df = pd.DataFrame({'ms': [], 'value': []})
 
         if not SIM:
             self.start_serial()
@@ -164,13 +177,20 @@ class mclass:
         return res
 
     def clear_chart(self):
+        self.plot_start_time = round(time.time() * 1000)
         self.clear_chart = 1
+        self.ax.clear() # clear previous plot !!!!
+        self.df = pd.DataFrame({'ms': [], 'value': []})
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+        self.update_measurements()
 
     def change_state(self):
         if self.continuePlotting == True:
             self.continuePlotting = False
             self.button_start['text'] = "START"
-            self.button_clear.config(state = 'disabled')
+            #self.button_clear.config(state = 'disabled')
+            self.but_export.config(state = 'normal')
             #self.value.config(text="")
             #self.max_value.config(text="")
             #self.min_value.config(text="")
@@ -180,7 +200,8 @@ class mclass:
         else:
             self.continuePlotting = True
             self.button_start['text'] = "STOP "
-            self.button_clear.config(state = 'normal')
+            #self.button_clear.config(state = 'normal')
+            self.but_export.config(state = 'disabled')
             self.plot()
 
     def quit(self):
@@ -189,33 +210,60 @@ class mclass:
         self.continuePlotting = False
         Tk().quit()
 
-    def plot(self):
-        plot_start_time = round(time.time() * 1000)
+    def export(self):
+        if not len(self.df):
+            messagebox.showerror("Export error", "No data to export")
+        else:
+            print("len: ", self.df.size)
+            self.df.to_csv('logger.csv', index=False)
+            messagebox.showinfo("Export", "Export completed - %s" % 'logger.csv')
 
-        df = pd.DataFrame({'ms': [], 'value': []})
+    def update_measurements(self):
+        self.readings.config(text="readings: %d" % self.df.shape[0])
+        if not self.df.size:
+            self.value.config(text="")
+            self.max_value.config(text="max: 0 Vrms")
+            self.min_value.config(text="min: 0 Vrms")
+            self.avg_value.config(text="avg: 0 Vrms")
+            self.std_value.config(text="std: 0 Vrms")
+        else:
+            self.max_value.config(text="max: %s Vrms" % format(self.df['value'].max(), '.6f').rjust(11))
+            self.min_value.config(text="min: %s Vrms" % format(self.df['value'].min(), '.6f').rjust(11))
+            self.avg_value.config(text="avg: %s Vrms" % format(self.df['value'].mean(), '.6f').rjust(11))
+            self.std_value.config(text="std: %s Vrms" % format(self.df['value'].std(), '.6f').rjust(11))
+
+    def plot(self):
+        self.fig, self.ax = plt.subplots(figsize=(13, 9))
+        self.fig.set_facecolor(self.window['bg'])
+        plt.rcParams['toolbar'] = 'None'
+
+        self.plot_start_time = round(time.time() * 1000)
+        self.df = pd.DataFrame({'ms': [], 'value': []})
 
         self.ax.clear() # clear previous plot !!!!
-        self.ax.tick_params(labeltop=False, labelright=True)
-        self.fig.set_facecolor(self.window['bg'])
+        self.ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
 
-        #format y axis
-        #ax.yaxis.set_minor_locator(AutoMinorLocator())
-        #ax.yaxis.set_minor_formatter(FormatStrFormatter("%.3f"))
+        self.ax.set_facecolor('xkcd:black')
+        self.ax.set_xlabel('Time, ms', fontsize=10, loc='center')
+        self.ax.set_ylabel('Voltage, Vrms', fontsize=10, loc='center')
+        self.ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
 
-        self.ax.plot(df.ms, df.value)
+        self.ax.plot(self.df.ms, self.df.value)
+        canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         if not self.plot_packed:
-            self.fig.canvas.get_tk_widget().pack(side=TOP, expand=0)
+            canvas.get_tk_widget().place(relx=.65, rely=.48, anchor="c")
         self.plot_packed = 1
-        self.fig.canvas.draw()
-        self.fig.canvas.flush_events()
+
+        canvas.draw()
+        canvas.flush_events()
 
         while(self.continuePlotting):
             if SIM:
             ## data sim
                 value = np.random.random()
-                if (round(time.time() * 1000) - plot_start_time > 15000):
+                if (round(time.time() * 1000) - self.plot_start_time > 15000):
                     value *= -10
-                if (round(time.time() * 1000) - plot_start_time > 10000):
+                if (round(time.time() * 1000) - self.plot_start_time > 10000):
                     value *= 10
             ##end of data sim
             else:
@@ -223,28 +271,23 @@ class mclass:
 
             if self.clear_chart:
                 self.ax.clear() # clear previous plot !!!!
-                df = pd.DataFrame({'ms': [], 'value': []})
+                self.df = pd.DataFrame({'ms': [], 'value': []})
                 self.clear_chart = 0
 
-            mytime = round(time.time() * 1000) - plot_start_time
+            mytime = round(time.time() * 1000) - self.plot_start_time
             self.value.config(text=format(value, '.6f') + " Vrms")
             if DEBUG: print("value measured: " + str(value))
 
-            df_graph = df
-            dfn = pd.DataFrame({'ms': [mytime], 'value': [value]})
 
             # move window
-            if (mytime > WINDOW_TIME): df_graph = df_graph.iloc[1:]
+            if self.chk_moving_var.get() == 1 and mytime > WINDOW_TIME:
+                self.ax.clear()
+                self.df = self.df.tail(-1)
 
-            df = pd.concat([df, dfn])
-            df_graph = pd.concat([df_graph, dfn])
+            dfn = pd.DataFrame({'ms': [mytime], 'value': [value]})
+            self.df = pd.concat([self.df, dfn])
 
-
-            self.readings.config(text="readings: %d" % df.size)
-            self.max_value.config(text="max: %s Vrms" % format(df['value'].max(), '.6f').rjust(11))
-            self.min_value.config(text="min: %s Vrms" % format(df['value'].min(), '.6f').rjust(11))
-            self.avg_value.config(text="avg: %s Vrms" % format(df['value'].mean(), '.6f').rjust(11))
-            self.std_value.config(text="std: %s Vrms" % format(df['value'].std(), '.6f').rjust(11))
+            self.update_measurements()
 
             self.ax.set_xlabel('time, ms', fontsize=20, loc='right')
             self.ax.set_ylabel('level, Vrms', fontsize=20, loc='center')
@@ -255,10 +298,11 @@ class mclass:
             ax.tick_params(labeltop=False, labelright=True)
             ax.yaxis.set_minor_locator(AutoMinorLocator())
             #self.ax.clear()
-            self.ax.plot(df.ms, df.value, color="xkcd:orange")
+            self.ax.plot(self.df.ms, self.df.value, color="xkcd:orange")
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
             if SIM: time.sleep(REFRESH_TIME)
+            self.plot_packed = 0
 
 window = Tk()
 start = mclass(window)
