@@ -319,8 +319,9 @@ class mclass:
                 if not SIM: self.set_siggen_freq(sm['freq'][i])
 
                 #4. measure Vca
-                #if not SIM: value = format(float(self.measure_vca()), '.6f')
-                if not SIM: value = format(float(self.measure_vca()) * 5.62341, '.6f')
+                if not SIM: value = format(float(self.measure_vca()), '.6f')
+                #to test:
+                #if not SIM: value = format(float(self.measure_vca()) * 5.62341, '.6f')
 
                 #take SIGGEN output signal as reference
                 #ref = format(float(self.str_amplitude.get()), '.6f')
