@@ -1,25 +1,27 @@
 # Modification 18/01/2023:
 # reference at 0dB is amplification at 1000Hz. Not the input signal voltage.
+# added csv data export
+
+#TODO:
+#add validations of input values. see change_state function
+#test case in which you change points per decade or miny/maxy between two different plots
 
 # some config
 SIM = 0
-DEBUG = 1
-DISPLAY = 1 # display on or off
+DEBUG = 0
+DISPLAY = 0 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1 # default amplitude for input signal in Vrms
 DEFAULT_MAXY = 9 # max value in y axis: 10dB
 DEFAULT_MINY = -9 # min value in y axis: 10dB
 DEFAULT_YSTEPS = 3
 
-#TODO:
-#add validations of input values. see change_state function
-#test case in which you change points per decade or miny/maxy between two different plots
 
 import matplotlib.pyplot as plt
 from tkinter import *
+from tkinter import messagebox
 import time
 import serial
-#from matplotlib.ticker import AutoMinorLocator
 from matplotlib.ticker import MultipleLocator
 # for simulation
 import numpy as np
@@ -28,6 +30,7 @@ from scipy import signal
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 from math import log10
+from math import ceil
 
 class mclass:
 
@@ -94,7 +97,7 @@ class mclass:
         self.etr_miny.icursor(1)
 
         # y steps
-        self.lbl_ysteps = Label(window, text="Y axis interval", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_ysteps = Label(window, text="Y axis ticks interval", font=('Courier New', 18), background=self.window['bg'])
         self.lbl_ysteps.place(x = 40, y = 443)
         self.str_ysteps = StringVar()
         self.str_ysteps.set(DEFAULT_YSTEPS)
@@ -106,12 +109,12 @@ class mclass:
         # details - Freq measured
         self.str_details = StringVar()
         self.lbl_details = Label(window, textvariable=self.str_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
-        self.lbl_details.place(x = 40, y = 1000)
+        self.lbl_details.place(x = 40, y = 900)
 
         # coordinates
         self.str_coordinates = StringVar()
         self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font=('Courier New', 18, 'bold'), background=self.window['bg'])
-        self.lbl_coordinates.place(x = 710, y = 1000)
+        self.lbl_coordinates.place(x = 710, y = 900)
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
@@ -120,6 +123,8 @@ class mclass:
         self.but_start.place(x=160, y=680)
         self.but_clear = Button(window, text="CLEAR", command=self.clear, font=('Courier New', 18))
         self.but_clear.place(x=293, y=680)
+        self.but_export = Button(window, text="EXPORT", command=self.export, font=('Courier New', 18))
+        self.but_export.place(x=420, y=680)
         #end of ui
 
         if SIM:
@@ -240,6 +245,7 @@ class mclass:
             self.but_start['text'] = "ABORT"
             self.but_quit.config(state = 'disabled')
             self.but_clear.config(state = 'disabled')
+            self.but_export.config(state = 'disabled')
 
             #store each decade freq (range)
             self.decades_freq = pd.DataFrame(columns = ['freq'])
@@ -302,17 +308,19 @@ class mclass:
                     self.etr_amplitude.focus_set()
                     self.but_quit.config(state = 'normal')
                     self.but_clear.config(state = 'normal')
+                    self.but_export.config(state = 'normal')
                     return
 
                 self.str_details.set("Measuring: " + format(sm['freq'][i], ".2f") + " Hz")
                 if DEBUG: print("Measuring: " , format(sm['freq'][i], ".2f") , " Hz")
-                self.lbl_details.place(x = 40, y = 880)
+                self.lbl_details.place(x = 40, y = 900)
 
                 #3. set freq.
                 if not SIM: self.set_siggen_freq(sm['freq'][i])
 
                 #4. measure Vca
-                if not SIM: value = format(float(self.measure_vca()), '.6f')
+                #if not SIM: value = format(float(self.measure_vca()), '.6f')
+                if not SIM: value = format(float(self.measure_vca()) * 5.62341, '.6f')
 
                 #take SIGGEN output signal as reference
                 #ref = format(float(self.str_amplitude.get()), '.6f')
@@ -321,7 +329,8 @@ class mclass:
                 if not SIM:
                     #if DEBUG: print("value: " + value)
                     #if DEBUG: print("inp: " + inp)
-                    db = 20 * np.log10(float(ref) / float(value))
+                    #db = 20 * np.log10(float(ref) / float(value))
+                    db = 20 * np.log10(float(value) / float(ref))
                     cond = (self.measurement['id'] == self.plots) & (self.measurement['freq'] == sm['freq'][i])
                     #if DEBUG: print("dB: %s" % format(db, '.2f'))
                     self.measurement.loc[cond, 'vca'] = db
@@ -339,6 +348,14 @@ class mclass:
         self.etr_points_decade.config(state = 'normal')
         self.but_quit.config(state = 'normal')
         self.but_clear.config(state = 'normal')
+        self.but_export.config(state = 'normal')
+
+    def export(self):
+        if not len(self.measurement):
+            messagebox.showerror("Export error", "No data to export")
+        else:
+            self.measurement.to_csv('freq_resp.csv', index=False)
+            messagebox.showinfo("Export", "Export completed - %s" % 'freq_resp.csv')
 
     def clear(self):
         if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'freq', 'vca'])
@@ -360,11 +377,16 @@ class mclass:
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
-        ax.set_ylim([float(self.str_miny.get()), float(self.str_maxy.get())])
-        ax.yaxis.set_ticks(np.arange(float(self.str_miny.get()), float(self.str_maxy.get()), float(self.str_ysteps.get()))) # Y scale
-        #ax.yaxis.set_major_locator(plt.MaxNLocator(6))
+
+        mean = ymin = ymax = 0
+        if self.measurement['vca'].any():
+             mean = ceil(self.measurement['vca'].max())
+             ymin = self.measurement['vca'].min()
+             ymax = self.measurement['vca'].max()
+        ax.set_ylim([ymin+float(self.str_miny.get()), ymax+float(self.str_maxy.get())])
+        ax.yaxis.set_ticks(np.arange(mean+float(self.str_miny.get()), mean+float(self.str_maxy.get()), float(self.str_ysteps.get()))) # Y scale
+
         ax.yaxis.set_minor_locator(MultipleLocator(1))
-        #ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         if SIM:
             ax.plot(self.x, self.y, color=self.colors[0])
@@ -386,10 +408,16 @@ class mclass:
     def replot(self):
         self.fig.tight_layout()
         ax = self.fig.get_axes()[0]
-        #ax.tick_params(labeltop=False, labelright=True, labelsize=14)
-        ax.yaxis.set_ticks(np.arange(float(self.str_miny.get()), float(self.str_maxy.get()), float(self.str_ysteps.get()))) # Y scale
         ax.yaxis.set_minor_locator(MultipleLocator(1))
-        ax.set_ylim([float(self.str_miny.get()), float(self.str_maxy.get())])
+
+        mean = ymin = ymax = 0
+        if self.measurement['vca'].any():
+             mean = ceil(self.measurement['vca'].max())
+             ymin = self.measurement['vca'].min()
+             ymax = self.measurement['vca'].max()
+        ax.set_ylim([ymin+float(self.str_miny.get()), ymax+float(self.str_maxy.get())])
+        ax.yaxis.set_ticks(np.arange(mean+float(self.str_miny.get()), mean+float(self.str_maxy.get()), float(self.str_ysteps.get()))) # Y scale
+
         for id in self.measurement['id'].unique():
             if id < self.plots: continue
             cond = (self.measurement['id'] == id)
