@@ -16,11 +16,17 @@ Plotting / measurement software for Keithley 2015 THD multimeter
 
 ## Usage
 ```python thd_vs_power.py```
+
 or
+
 ```python thd.py```
+
 or..
+
 ```python freq_resp.py```
+
 ```python logger.py```
+
 ```python thd_vs_freq.py```
 
 
@@ -43,3 +49,6 @@ If you wish to make a donation, please click the above button or just send money
 Paypal is preferred over Patreon.
 
 Thank you!
+
+## Keithley 2015 limitations
+https://www.head-case.org/forums/topic/21432-the-keithley-2015-and-2016-audio-analysing-multi-meters-guide-to-behaviour-limitations-and-issues/
