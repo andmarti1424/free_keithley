@@ -137,16 +137,17 @@ class mclass:
 
         # details - input sweep
         self.str_details = StringVar()
-        self.lbl_details = Label(window, textvariable=self.str_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
-        self.lbl_details.place(x = 40, y = 900)
+        self.lbl_details = Label(window, textvariable=self.str_details, font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_details.place(x = 40, y = 950)
 
         # coordinates
-        self.txt_coordinates = Text(bd=0, bg=window['bg'], height=3, wrap="none", state="normal", font=('Courier New', 18), background=self.window['bg'])
-        self.txt_coordinates.place(x = 710, y = 900)
+        self.txt_coordinates = Text(bd=0, bg=window['bg'], height=3, wrap="none", state="normal", font=('Courier New', 18, 'bold'), background=self.window['bg'])
+        self.txt_coordinates.place(x = 710, y = 950)
         self.txt_coordinates.config(highlightthickness = 0, borderwidth=0)
         for c in self.colors:
             self.txt_coordinates.tag_configure(c, foreground=c)
         self.txt_coordinates.tag_configure("green", foreground="green")
+        self.txt_coordinates.tag_configure("royalblue", foreground="royalblue")
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
@@ -414,8 +415,9 @@ class mclass:
                 self.send_cmd(':OUTP OFF') #;turn off source
 
     def replot(self):
-        self.fig.tight_layout()
-#        self.fig.tight_layout(rect=[0.08, 0.08, 0.95, 0.95])
+        #self.fig.tight_layout()
+        #self.fig.tight_layout(rect=[0.08, 0.08, 0.95, 0.95])
+        self.fig.tight_layout(rect=[0, 0, 0.95, 1])
         ax = self.fig.get_axes()[0]
 #        #ax.clear()         # clear axes from previous plot !!!!
 #        #plt.rcParams['toolbar'] = 'None'
@@ -450,8 +452,11 @@ class mclass:
         plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
     def plot(self, draw = 1):
-        self.fig, ax = plt.subplots(figsize=(13, 9))
+        self.fig, ax = plt.subplots(figsize=(14, 8.8))
         self.fig.tight_layout()
+        #self.fig.tight_layout(rect=[0.08, 0.08, 0.95, 0.95])
+        #left bottom right top
+        self.fig.tight_layout(rect=[0, 0, 0.95, 1])
         self.fig.set_facecolor(self.window['bg'])
         plt.rcParams['toolbar'] = 'None'
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
@@ -477,7 +482,7 @@ class mclass:
             j.set_color(self.colors[i])
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
-        canvas.get_tk_widget().place(relx=.65, rely=.48, anchor="c")
+        canvas.get_tk_widget().place(relx=.65, rely=.46, anchor="c")
         if draw:
             canvas.draw()
             canvas.start_event_loop(0.05)
@@ -503,7 +508,10 @@ class mclass:
             #self.txt_coordinates.insert(END, "power: %s Wrms - THD: " % format(p, '.2f').rjust(6, " "))
             for i, r in (df.loc[(df['vin'] == vin)]).iterrows():
                 self.txt_coordinates.insert(END, "%s%% " % format(r['thd'], '.2f'), self.colors[int(r['id'])])
-            self.txt_coordinates.insert(END, "\n (%s, %s)" % (format(event.xdata, '.2f'), y))
+            self.txt_coordinates.insert(END, "\ninput:  ")
+            self.txt_coordinates.insert(END, "%s" % format(r['vin'], '.2f').rjust(6, " "), "royalblue")
+            self.txt_coordinates.insert(END, " Vrms")
+            self.txt_coordinates.insert(END, "\ncursor: (%s, %s)" % (format(event.xdata, '.2f'), y))
             self.txt_coordinates.config(state='disabled')
 
 window = Tk()

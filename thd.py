@@ -1,6 +1,11 @@
 #SOURCE:
 #https://download.tek.com/manual/2015-900-01(F-Aug2003)(User).pdf
 
+#to avoid the need of start serial with sudo
+#stat /dev/ttyUSB0
+#sudo usermod -a -G uucp mongo
+#sudo reboot
+
 # Some settings
 SIM = 1 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
