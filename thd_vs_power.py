@@ -1,5 +1,5 @@
 # some config
-SIM = 0
+SIM = 1
 DEBUG = 0
 DISPLAY = 1 # display on or off
 DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
@@ -40,6 +40,7 @@ class mclass:
 
         # setup UI
         self.colors=['whitesmoke', 'crimson', 'deepskyblue', 'limegreen']
+        self.colors_det=['whitesmoke', 'crimson', 'blue', 'darkgreen']
         self.str_title = StringVar()
         self.window['bg'] = 'silver'
 
@@ -141,13 +142,13 @@ class mclass:
         self.lbl_details.place(x = 40, y = 950)
 
         # coordinates
-        self.txt_coordinates = Text(bd=0, bg=window['bg'], height=3, wrap="none", state="normal", font=('Courier New', 18, 'bold'), background=self.window['bg'])
-        self.txt_coordinates.place(x = 710, y = 950)
+        self.txt_coordinates = Text(bd=0, bg=window['bg'], height=6, wrap="none", state="normal", font=('Courier New', 18, ''), background=self.window['bg'])
+        self.txt_coordinates.place(x = 750, y = 900)
         self.txt_coordinates.config(highlightthickness = 0, borderwidth=0)
         for c in self.colors:
             self.txt_coordinates.tag_configure(c, foreground=c)
-        self.txt_coordinates.tag_configure("green", foreground="green")
-        self.txt_coordinates.tag_configure("royalblue", foreground="royalblue")
+        for d in self.colors_det:
+            self.txt_coordinates.tag_configure(d, foreground=d, font=('Courier New', 20, ''))
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
@@ -363,6 +364,7 @@ class mclass:
                     return
 
                 self.str_details.set("Measuring THD at " + format(sm['vin'][vin], ".4f") + " Vrms input")
+
                 if DEBUG: print("Measuring THD at " , format(sm['vin'][vin], ".4f") , " Vrms input")
 
                 if SIM:
@@ -442,7 +444,7 @@ class mclass:
             ax.plot(df['vout'] ** 2 / df['impedance'], df['thd'], color=self.colors[int(id)])
 
         # set legend color
-        ax.legend(self.measurement['id'].astype('int').unique())
+        ax.legend(self.measurement['id'].astype('int').unique(), fontsize=14)
         leg = ax.get_legend()
         for i, j in enumerate(leg.legendHandles):
             j.set_color(self.colors[i])
@@ -452,7 +454,7 @@ class mclass:
         plt.gcf().canvas.mpl_connect('motion_notify_event', self.motion_hover)
 
     def plot(self, draw = 1):
-        self.fig, ax = plt.subplots(figsize=(14, 8.8))
+        self.fig, ax = plt.subplots(figsize=(14, 8.0))
         self.fig.tight_layout()
         #self.fig.tight_layout(rect=[0.08, 0.08, 0.95, 0.95])
         #left bottom right top
@@ -462,12 +464,15 @@ class mclass:
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.set(xscale="log")
         ax.set_facecolor('xkcd:black')
+        #ax.set_facecolor('xkcd:navy blue')
+        #ax.set_facecolor('xkcd:dark blue')
         ax.set_xlabel('Power, Wrms', fontsize=20, loc='center')
         ax.set_ylabel('%s, %%' % self.str_measurement_type.get(), fontsize=20, loc='center')
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xticks([0.01, 0.1, 1, 10, 100], ["0.01", "0.1", "1", "10", "100"])
         ax.set_xlim([0.1, 10])
+        #ax.set_xlim([0.1, 100])
         ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         #ax.xaxis.set_minor_locator(AutoMinorLocator())
@@ -482,7 +487,7 @@ class mclass:
             j.set_color(self.colors[i])
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
-        canvas.get_tk_widget().place(relx=.65, rely=.46, anchor="c")
+        canvas.get_tk_widget().place(relx=.65, rely=.42, anchor="c")
         if draw:
             canvas.draw()
             canvas.start_event_loop(0.05)
@@ -497,21 +502,28 @@ class mclass:
             y = format(event.ydata, '.2f')
             t = df.iloc[((df['vout']**2/df['impedance'])-x).abs().argsort()[:1]]
             vin = t['vin'].tolist()[0]
-            vout = t['vout'].tolist()[0]
-            p = vout ** 2 / 8
 
             self.txt_coordinates.config(state='normal')
             self.txt_coordinates.delete('1.0', END)
-            self.txt_coordinates.insert(END, "power: ")
-            self.txt_coordinates.insert(END, " %s " % format(p, '.2f').rjust(6, " "), "green")
-            self.txt_coordinates.insert(END, "Wrms - THD: ")
-            #self.txt_coordinates.insert(END, "power: %s Wrms - THD: " % format(p, '.2f').rjust(6, " "))
+
             for i, r in (df.loc[(df['vin'] == vin)]).iterrows():
-                self.txt_coordinates.insert(END, "%s%% " % format(r['thd'], '.2f'), self.colors[int(r['id'])])
-            self.txt_coordinates.insert(END, "\ninput:  ")
-            self.txt_coordinates.insert(END, "%s" % format(r['vin'], '.2f').rjust(6, " "), "royalblue")
-            self.txt_coordinates.insert(END, " Vrms")
-            self.txt_coordinates.insert(END, "\ncursor: (%s, %s)" % (format(event.xdata, '.2f'), y))
+                color = self.colors_det[int(r['id'])]
+
+                self.txt_coordinates.insert(END, "input:  ")
+                self.txt_coordinates.insert(END, "%s" % format(r['vin'], '.2f').rjust(6, " "), color)
+                self.txt_coordinates.insert(END, " Vrms\t\t\t")
+
+                vout = r['vout']
+                p = vout ** 2 / 8
+                self.txt_coordinates.insert(END, "power: ")
+                self.txt_coordinates.insert(END, " %s " % format(p, '.2f').rjust(6, " "), color)
+                self.txt_coordinates.insert(END, "Wrms\t\t\t")
+
+                self.txt_coordinates.insert(END, "THD: ")
+                self.txt_coordinates.insert(END, "%s" % format(r['thd'], '.2f').rjust(6, " "), color)
+                self.txt_coordinates.insert(END, " %\n")
+
+            self.txt_coordinates.insert(END, "cursor: (%s, %s)" % (format(event.xdata, '.2f'), y))
             self.txt_coordinates.config(state='disabled')
 
 window = Tk()
