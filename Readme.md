@@ -29,6 +29,7 @@ or..
 
 ```python thd_vs_freq.py```
 
+```python fft.py```
 
 ## Screenshots
 ![demo image](screenshots/a3.jpg?raw=true)
@@ -36,6 +37,7 @@ or..
 ![demo image](screenshots/logger.jpg?raw=true)
 ![demo image](screenshots/freq_resp.jpg?raw=true)
 ![demo image](screenshots/thdp.jpg?raw=true)
+![demo image](screenshots/fft.jpg?raw=true)
 
 ## Donations
 Pleeease support the development of this app by making a DONATION with PayPal.
