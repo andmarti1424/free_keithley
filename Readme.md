@@ -32,11 +32,11 @@ or..
 ```python fft.py```
 
 ## Screenshots
+![demo image](screenshots/thdp.jpg?raw=true)
+![demo image](screenshots/logger.jpg?raw=true)
 ![demo image](screenshots/a3.jpg?raw=true)
 ![demo image](screenshots/thdf.jpg?raw=true)
-![demo image](screenshots/logger.jpg?raw=true)
 ![demo image](screenshots/freq_resp.jpg?raw=true)
-![demo image](screenshots/thdp.jpg?raw=true)
 ![demo image](screenshots/fft.jpg?raw=true)
 
 ## Donations
