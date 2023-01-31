@@ -1,7 +1,7 @@
 # free_keithley
 Plotting / measurement software for Keithley 2015 THD multimeter
 
-![image](screenshots/2015front.jpg?raw=true width="100")
+<img src="screenshots/2015front.jpg" width="100">
 
 ## Utilities
  - THD measurement: THD/THDN and distortion of each harmonic
