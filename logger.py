@@ -83,7 +83,7 @@ class mclass:
     def start_serial(self):
         try:
             self.ser.port='/dev/ttyUSB0'
-            self.ser.baudrate=9600
+            self.ser.baudrate=19200
             self.ser.timeout=0
             self.ser.parity=serial.PARITY_NONE
             self.ser.stopbits=serial.STOPBITS_ONE

@@ -31,8 +31,8 @@ my RS232 times are:
 """
 
 # Some settings
-SIM = 1 # do not interact with equipment, just sim data
-DEBUG = 1 # print debug data on terminal
+SIM = 0 # do not interact with equipment, just sim data
+DEBUG = 0 # print debug data on terminal
 DISPLAY = 0 # display on or off
 UPDATE_INTERVAL= 1 # only used on sim.
 
@@ -87,6 +87,9 @@ class mclass:
         # FFT data for plot
         self.x1 = []
         self.y1 = []
+        if SIM:
+            self.x1 = [20, 50, 100, 200, 500, 900, 1000, 1060, 1080, 2000, 5000, 7500, 10000, 20000]
+            self.y1 = [-80, -70, -60, -82, -56, -75, 0, -70, -65, -70, -85, -82, -92, -75]
 
         #setup UI
         self.window['bg'] = 'silver'
@@ -207,10 +210,12 @@ class mclass:
         self.but_export = Button(window, text="EXPORT", command=self.export, font=('Courier New', 18))
         self.but_export.place(x=900, y=980)
 
-        # harmonic details upon click
+        # label for cursor location
         self.str_harm_details = StringVar()
         self.lbl_harm_details = Label(window, textvariable=self.str_harm_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
         self.lbl_harm_details.place(x = 1080, y = 940)
+        self.vline = None
+        self.plotline = None
 
         #focus
         self.etr_harm_qty.icursor(1)
@@ -378,8 +383,6 @@ class mclass:
             self.str_perc.set(new_textperc)
             self.fundamental_vrms = float(new_textVac)
             self.fundamental_freq = new_textHz
-            self.x1 = [20, 50, 100, 200, 500, 900, 1000, 1080, 2000, 5000, 10000, 20000]
-            self.y1 = [-80, -70, -60, -82, -56, -75, 0, -70, -70, -85, -92, -75]
         else:
 
             self.setup_thd_measurement()
@@ -538,8 +541,9 @@ class mclass:
         Tk().quit()
 
     def change_state(self):
-        while (self.avoid_exit):
-            self.fig.canvas.draw()
+        #while (self.avoid_exit):
+        #    self.fig.canvas.draw_idle()
+            #self.fig.canvas.draw()
 
         if self.running == True:
             if not SIM and self.chk_SIGGEN_var.get() == 1:
@@ -554,7 +558,6 @@ class mclass:
             self.rad_thd.config(state = 'normal')
             self.rad_thdn.config(state = 'normal')
             self.rad_sinad.config(state = 'normal')
-            #self.etr_SIGGEN_freq.config(state = 'normal')
             self.cmb_SIGGEN_freq.config(state = 'readonly')
             self.etr_SIGGEN_amp.config(state = 'normal')
             self.etr_resistance.config(state = 'normal')
@@ -571,13 +574,13 @@ class mclass:
             self.chk_SIGGEN.config(state = 'disabled')
             self.chk_power.config(state = 'disabled')
             self.rad_thd.config(state = 'disabled')
-            #self.etr_SIGGEN_freq.config(state = 'disabled')
             self.cmb_SIGGEN_freq.config(state = 'disabled')
             self.etr_SIGGEN_amp.config(state = 'disabled')
             self.rad_thdn.config(state = 'disabled')
             self.rad_sinad.config(state = 'disabled')
             self.etr_resistance.config(state = 'disabled')
             self.replot_thread()
+            self.measure_thread()
 
     def print_details(self, event):
         if not len(self.x1): return
@@ -588,11 +591,32 @@ class mclass:
             #y = format(event.ydata, '.2f')
 
             #show closest value of data according to cursor position
-            x = min(self.x1, key=lambda x:abs(x-event.xdata))
-            x_pos = self.x1.index(x)
+            xval = min(self.x1, key=lambda xval:abs(xval-event.xdata))
+            x_pos = self.x1.index(xval)
             y = self.y1[x_pos]
 
-            self.str_harm_details.set(str(x).rjust(6, " ") + " Hz" + ', ' + str(y).rjust(4, " ") + " dB")
+            self.str_harm_details.set(str(xval).rjust(6, " ") + " Hz" + ', ' + str(y).rjust(4, " ") + " dB")
+
+            ax = self.fig.get_axes()[0]
+
+            if self.vline is not None:
+                self.vline.remove()
+
+            self.vline = ax.axvline(x=xval, color='red', ls=':', lw=2)
+
+            #try:
+                #self.fig.canvas.draw_idle()
+            #    self.fig.canvas.draw()
+            #    self.fig.canvas.flush_events()
+            #except:
+            #    time.sleep(1)
+
+            #window.after(500, self.fig.canvas.draw())
+            #ax.figure.canvas.draw()
+            #fig = plt.figure()
+            #fig.canvas.flush_events()
+            #plt.pause(0.000000000001)
+            #self.fig.canvas.draw()
 
     def plot(self):
         self.fig, ax = plt.subplots(figsize=(13, 7))
@@ -601,7 +625,11 @@ class mclass:
         ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
-        ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+
+        fig = plt.figure()
+        fig.canvas.draw()
+        self.plotdata = ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        self.plotline = ax.lines[len(ax.lines)-1]
 
         ax.set_facecolor('xkcd:black')
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
@@ -617,6 +645,7 @@ class mclass:
         self.plot_packed = 1
         canvas.mpl_connect('motion_notify_event', self.print_details)
         canvas.draw()
+        canvas.flush_events()
 
     def replot(self):
         #if SIM:
@@ -624,16 +653,30 @@ class mclass:
             #end of data sim
 
         #now replot
-        self.fig.tight_layout()
+        try:
+            self.fig.tight_layout()
+        except:
+            pass
         ax = self.fig.get_axes()[0]
-        ax.clear()         # clear axes from previous plot !!!!
-        ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
-        ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
-        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
-        ax.set_xlim([20, 20000])
+
+        #ax.lines.pop(0) #remove first line from graph insted of clearing
+        if self.plotline is not None:
+            try:
+                ax.lines.pop(ax.lines.index(self.plotline))
+            except:
+                print(ax.lines.index(self.plotline))
+                pass
+
+        #for line in ax.lines: ax.lines.pop(0)
+        #ax.clear()         # clear axes from previous plot !!!!
+        #ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
+        #ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
+        #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
+        #ax.set_xlim([20, 20000])
         ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        self.plotline = ax.lines[len(ax.lines)-1]
         #ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
-        ax.set_facecolor('xkcd:black')
+        #ax.set_facecolor('xkcd:black')
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
@@ -641,8 +684,16 @@ class mclass:
         ax.set_ylim([int(self.str_ybottom.get()), 0])
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
         ax.xaxis.set_major_formatter(ScalarFormatter())
-        self.fig.canvas.mpl_connect('motion_notify_event', self.print_details)
+
+        #fig = plt.figure()
+        #fig.canvas.mpl_connect('motion_notify_event', self.print_details)
+        #fig.canvas.draw()
+        #fig.canvas.flush_events()
         self.fig.canvas.draw()
+        #self.fig.canvas.draw()
+        #window.after(50, ax.figure.canvas.draw())
+        ax.figure.canvas.flush_events()
+        #ax.figure.canvas.draw_idle()
 
     def export(self):
         if not len(self.x1):
@@ -652,21 +703,29 @@ class mclass:
             pd.DataFrame(dict).to_csv('fft.csv', index=False)
             messagebox.showinfo("Export", "Export completed - %s" % 'fft.csv')
 
+    def _measure_thread(self):
+        while self.running:
+            if DEBUG: print("calculate power");
+            self.measure_vca()
+            if DEBUG: print("remeasuring THD");
+            self.measure_thd() #and get fft bins
+
     def _replot_thread(self):
         if DEBUG: print("THD replot thread running");
 
         while self.running:
-            if DEBUG: print("calculate power");
-            self.measure_vca()
-
-            if DEBUG: print("remeasuring THD");
-            self.measure_thd() #and get fft bins
+            #if DEBUG: print("calculate power");
+            #self.measure_vca()
+            #if DEBUG: print("remeasuring THD");
+            #self.measure_thd() #and get fft bins
 
             if DEBUG: print("re plotting")
             self.replot()
 
             if SIM:
-                time.sleep(UPDATE_INTERVAL)
+                 #time.sleep(UPDATE_INTERVAL)
+                 self.y1[2]-= 2
+                 if self.y1[2] <= -90: self.y1[2]-= -75
 
         if DEBUG: print("END running THD replot thread");
 
@@ -674,7 +733,12 @@ class mclass:
         self.thread = threading.Thread(target=self._replot_thread)
         self.thread.start()
 
+    def measure_thread(self):
+        self.mthread = threading.Thread(target=self._measure_thread)
+        self.mthread.start()
+
 window = Tk()
 start = mclass(window)
 start.replot_thread()
+start.measure_thread()
 window.mainloop()

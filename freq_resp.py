@@ -10,7 +10,7 @@
 #test case in which you change points per decade or miny/maxy between two different plots
 
 # some config
-SIM = 0
+SIM = 1
 DEBUG = 0
 DISPLAY = 1 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
@@ -141,7 +141,7 @@ class mclass:
     def start_serial(self):
         try:
             self.ser.port='/dev/ttyUSB0'
-            self.ser.baudrate=9600
+            self.ser.baudrate=19200
             self.ser.timeout=0
             self.ser.parity=serial.PARITY_NONE
             self.ser.stopbits=serial.STOPBITS_ONE
