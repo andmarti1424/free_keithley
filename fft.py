@@ -1,30 +1,47 @@
 #SOURCE:
 #https://download.tek.com/manual/2015-900-01(F-Aug2003)(User).pdf
+#https://www.head-case.org/forums/topic/21432-the-keithley-2015-and-2016-audio-analysing-multi-meters-guide-to-behaviour-limitations-and-issues/
+#https://www.eevblog.com/forum/testgear/keithley-2015-thd-with-fft-and-harmonic-graphs/
+#https://www.eevblog.com/forum/testgear/continuing-the-keithley-2015-2015p-saga/
 
 #to avoid the need of start serial with sudo
 #stat /dev/ttyUSB0
 #sudo usermod -a -G uucp mongo
 #sudo reboot
 
-#TODO
-#export data
-#in change state, add same validations, just as
+"""
+TODO
+
+#1. add check to enable/disable LCD
+
+#2. Add entry box to set bottom Y scale
+
+
+#6. in change state, add same validations, just as
 # check here that internal WG freq is valid
 # check qty of harm is numeric
 # check ohms is numeric and 4, 8 or 16 ohms
 
+#max FFT freq: 20460Hz
+
+#Keithley 2015 does not allow to change OUTPUT data format to SREAL to increase FFT speed if using RS232! :(
+my RS232 times are:
+    17.6s with 19200 baudrate
+    26.0s with 9600 baudrate
+"""
+
 # Some settings
-SIM = 0 # do not interact with equipment, just sim data
+SIM = 1 # do not interact with equipment, just sim data
 DEBUG = 1 # print debug data on terminal
-DISPLAY = 1 # display on or off
+DISPLAY = 0 # display on or off
 UPDATE_INTERVAL= 1 # only used on sim.
 
 DEFAULT_QTY_HARM = 8 # default number of harmonics to plot in graph
 DEFAULT_SIGGEN_FREQ = 1000 # in Hz
-DEFAULT_SIGGEN_AMP = 2 # in Vrms
+DEFAULT_SIGGEN_AMP = 1 # in Vrms
 DEFAULT_DUMMY_RESISTANCE = 8 # in ohms
 BOTTOM_DB = -100 # bottom dB in graph
-
+BINS_BY_INPUT_FRQ={20:1023, 40:1023, 60:833, 80:1023, 100:1000, 120:833, 200:1000, 500:900, 1000:750, 4500:733, 10000:735, 20000:732}
 
 fft_bin_width = 20
 non_50_m = 68.4758620689655
@@ -37,16 +54,17 @@ from matplotlib.widgets import TextBox
 matplotlib.use('TkAgg')
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-#from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import AutoMinorLocator
 from matplotlib.ticker import ScalarFormatter
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from tkinter import *
+from tkinter import ttk
 import pandas as pd
 import time
 import math
 import threading
-import tkinter.messagebox
+from tkinter import messagebox
 import serial
 import numpy as np #for data sim
 
@@ -98,9 +116,13 @@ class mclass:
         self.chk_SIGGEN.place(x = 190, y = 10)
         self.lbl_SIGGEN_freq = Label(self.siggenFrame, text="SIG-GEN frequency", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.lbl_SIGGEN_hz = Label(self.siggenFrame, text="Hz", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
+
         self.str_SIGGEN_freq = StringVar()
         self.str_SIGGEN_freq.set(DEFAULT_SIGGEN_FREQ)
-        self.etr_SIGGEN_freq = Entry(self.siggenFrame, textvariable=self.str_SIGGEN_freq, font=('Courier New', 18), width=14, state=DISABLED)
+        self.cmb_SIGGEN_freq = ttk.Combobox(self.siggenFrame, values=list(BINS_BY_INPUT_FRQ.keys()), textvariable=self.str_SIGGEN_freq, font=('Courier New', 18), width=13)
+        self.cmb_SIGGEN_freq['state'] = 'readonly'
+
+
         self.lbl_SIGGEN_amp = Label(self.siggenFrame, text="SIG-GEN amplitude", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.str_SIGGEN_amp = StringVar()
         self.str_SIGGEN_amp.set(DEFAULT_SIGGEN_AMP)
@@ -109,7 +131,7 @@ class mclass:
         self.internal_SIGGEN_click()
 
         self.powerFrame = LabelFrame(window, text="", height=200, width=520, background=self.window['bg'])
-        self.powerFrame.place(x = 30, y = 700)
+        self.powerFrame.place(x = 30, y = 780)
         self.lbl_power = Label(self.powerFrame, text="Calculate power", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.lbl_power.place(x = 10, y = 10)
         self.chk_power_var = IntVar()
@@ -125,9 +147,19 @@ class mclass:
         # power details
         self.str_power_calculated = StringVar()
         self.lbl_power_calculated = Label(self.powerFrame, textvariable=self.str_power_calculated, font=('Courier New', 18), foreground='blue', background=self.window['bg'])
-        #self.lbl_power_calculated.place(x = 1280, y = 965)
         self.lbl_power_calculated.place(x = 215, y = 140)
 
+
+        #y axis bottom value
+        self.str_ybottom = StringVar()
+        self.str_ybottom.set(BOTTOM_DB)
+        self.cmb_ybottom = ttk.Combobox(window, values=[-80,-90,-100, -110, -120, -130], textvariable=self.str_ybottom, font=('Courier New', 18), width=13)
+        self.cmb_ybottom['state'] = 'readonly'
+        self.cmb_ybottom.place(x = 245, y = 700)
+        self.lbl_db2 = Label(window, text = "dB", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_db2.place(x = 450, y = 700)
+        self.lbl_ybottom = Label(window, text="Y axis bottom", font=('Courier New', 18), wraplength=200, justify='left', background=self.window['bg'])
+        self.lbl_ybottom.place(x = 40, y = 700)
 
         # measurement results
         self.lbl_Fundamental = Label(window, text = "Fundamental", font=('Courier New', 18), background=self.window['bg'])
@@ -169,9 +201,11 @@ class mclass:
 
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
-        self.but_quit.place(x=120, y=980)
+        self.but_quit.place(x=620, y=980)
         self.but_start = Button(window, text="START", command=self.change_state, font=('Courier New', 18))
-        self.but_start.place(x=245, y=980)
+        self.but_start.place(x=760, y=980)
+        self.but_export = Button(window, text="EXPORT", command=self.export, font=('Courier New', 18))
+        self.but_export.place(x=900, y=980)
 
         # harmonic details upon click
         self.str_harm_details = StringVar()
@@ -188,7 +222,7 @@ class mclass:
         if SIM: return
         try:
             self.ser.port='/dev/ttyUSB0'
-            self.ser.baudrate=9600
+            self.ser.baudrate=19200
             self.ser.timeout=0
             self.ser.parity=serial.PARITY_NONE
             self.ser.stopbits=serial.STOPBITS_ONE
@@ -209,8 +243,7 @@ class mclass:
                 return -1
 
     def write(self, s, term = '\r'):
-        if DEBUG:
-            print('TX >> ', s)
+        if DEBUG: print('TX >> ', s)
         self.ser.write(str.encode(s))
         if term:
             self.ser.write(b'\r')
@@ -223,8 +256,7 @@ class mclass:
             c = self.ser.read(1)
             if c == b'\r':
                 s = b''.join(buf).decode('ascii')
-                if DEBUG:
-                    print("RX << ", repr(s))
+                if DEBUG: print("RX << ", repr(s))
                 return s.strip()
             else:
                 buf.append(c)
@@ -358,8 +390,8 @@ class mclass:
 
             # return dist in percent
             res = self.send_cmd(':READ?')
-            print("##", res)
-            res = format(float(res), '.6f')
+            if DEBUG: print("## returned dist %", res)
+            if res != '': res = format(float(res), '.6f')
             if DEBUG: print("% dist: " + res)
 
             # return fundamental amplitude in Vrms
@@ -401,10 +433,14 @@ class mclass:
             #res = format(res, '.6f')
             #if DEBUG: print("new RMS amplitude in Vrms: " + res)
 
-            #bins = [float(i) for i in dmm.cmd(':DIST:FFT:BINS? 1,500')]
-            #bins_raw = [float(i) for i in self.send_cmd(':DIST:FFT:BINS? 1,511')]
             self.avoid_exit=1
-            bins_raw = [float(i) for i in self.send_cmd(':DIST:FFT:BINS? 1,1023')]
+            #TODO1
+            if DEBUG: print("input freq: " , self.str_SIGGEN_freq.get())
+            if DEBUG: print("bins: " , BINS_BY_INPUT_FRQ[int(self.str_SIGGEN_freq.get())])
+            binsn = BINS_BY_INPUT_FRQ[int(self.str_SIGGEN_freq.get())]
+            #bins_raw = [float(i) for i in self.send_cmd(':DIST:FFT:BINS? 1,1023')]
+            bins_raw = [float(i) for i in self.send_cmd(':DIST:FFT:BINS? 1,%s' % binsn)]
+
             self.avoid_exit=0
             # For some reason, the Keithley 2015 returns 9.91e+37 when it's out of
             # range, prune these values
@@ -416,7 +452,7 @@ class mclass:
                     break
 
             max_mag = max(bins_raw)
-            print("Maximum magnitude of FFT = {}".format(max_mag))
+            if DEBUG: print("Maximum magnitude of FFT = {}".format(max_mag))
             # Normalize FFT
             bins = [i - max_mag for i in bins_raw]
             self.x1 = []
@@ -459,20 +495,25 @@ class mclass:
 
     def internal_SIGGEN_click(self):
         if self.chk_SIGGEN_var.get() == 0:
-            self.etr_SIGGEN_freq.config(state = 'disabled')
+            #self.etr_SIGGEN_freq.config(state = 'disabled')
+            self.cmb_SIGGEN_freq.config(state = 'disabled')
             self.lbl_SIGGEN_freq.place_forget()
-            self.etr_SIGGEN_freq.place_forget()
+            #self.etr_SIGGEN_freq.place_forget()
+            self.cmb_SIGGEN_freq.place_forget()
             self.etr_SIGGEN_amp.config(state = 'disabled')
             self.lbl_SIGGEN_amp.place_forget()
             self.etr_SIGGEN_amp.place_forget()
             self.lbl_SIGGEN_hz.place_forget()
             self.lbl_SIGGEN_Vrms.place_forget()
         else:
-            self.etr_SIGGEN_freq.config(state = 'normal')
+            #self.etr_SIGGEN_freq.config(state = 'normal')
+            self.cmb_SIGGEN_freq.config(state = 'readonly')
             self.lbl_SIGGEN_freq.place(x = 10, y = 80)
-            self.etr_SIGGEN_freq.place(x = 215, y = 80)
-            self.etr_SIGGEN_freq.icursor(len(self.str_SIGGEN_freq.get()))
-            self.etr_SIGGEN_freq.focus_set()
+            #self.etr_SIGGEN_freq.place(x = 215, y = 80)
+            self.cmb_SIGGEN_freq.place(x = 215, y = 80)
+            ##self.etr_SIGGEN_freq.icursor(len(self.str_SIGGEN_freq.get()))
+            #self.etr_SIGGEN_freq.focus_set()
+            self.cmb_SIGGEN_freq.focus_set()
             self.etr_SIGGEN_amp.config(state = 'normal')
             self.lbl_SIGGEN_amp.place(x = 10, y = 140)
             self.etr_SIGGEN_amp.place(x = 215, y = 140)
@@ -496,32 +537,6 @@ class mclass:
         #self.thread.join()
         Tk().quit()
 
-    def replot(self):
-        #if SIM:
-            #sim change in data
-            #end of data sim
-
-        #now replot
-        self.fig.tight_layout()
-        ax = self.fig.get_axes()[0]
-        ax.clear()         # clear axes from previous plot !!!!
-        ax.set_ylabel('FFT Bin Magnitude in dB', fontsize=20, loc='center')
-        ax.set_xlabel('Frequency in Hz', fontsize=20, loc='center')
-        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
-        ax.set_xlim([20, 20000])
-        ax.semilogx(self.x1, self.y1, '-')
-        #ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
-        ax.set_facecolor('xkcd:black')
-        ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
-        ax.yaxis.set_ticks(np.arange(-100, 0, 5), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
-        ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
-        #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
-        ax.set_ylim([-100, 0])
-        #ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.xaxis.set_major_formatter(ScalarFormatter())
-        self.fig.canvas.mpl_connect('motion_notify_event', self.print_details)
-        self.fig.canvas.draw()
-
     def change_state(self):
         while (self.avoid_exit):
             self.fig.canvas.draw()
@@ -539,7 +554,8 @@ class mclass:
             self.rad_thd.config(state = 'normal')
             self.rad_thdn.config(state = 'normal')
             self.rad_sinad.config(state = 'normal')
-            self.etr_SIGGEN_freq.config(state = 'normal')
+            #self.etr_SIGGEN_freq.config(state = 'normal')
+            self.cmb_SIGGEN_freq.config(state = 'readonly')
             self.etr_SIGGEN_amp.config(state = 'normal')
             self.etr_resistance.config(state = 'normal')
             self.etr_harm_qty.focus_set()
@@ -555,7 +571,8 @@ class mclass:
             self.chk_SIGGEN.config(state = 'disabled')
             self.chk_power.config(state = 'disabled')
             self.rad_thd.config(state = 'disabled')
-            self.etr_SIGGEN_freq.config(state = 'disabled')
+            #self.etr_SIGGEN_freq.config(state = 'disabled')
+            self.cmb_SIGGEN_freq.config(state = 'disabled')
             self.etr_SIGGEN_amp.config(state = 'disabled')
             self.rad_thdn.config(state = 'disabled')
             self.rad_sinad.config(state = 'disabled')
@@ -575,24 +592,24 @@ class mclass:
             x_pos = self.x1.index(x)
             y = self.y1[x_pos]
 
-            self.str_harm_details.set(str(x) + " Hz" + ', ' + str(y) + " dB")
+            self.str_harm_details.set(str(x).rjust(6, " ") + " Hz" + ', ' + str(y).rjust(4, " ") + " dB")
 
     def plot(self):
         self.fig, ax = plt.subplots(figsize=(13, 7))
         self.fig.tight_layout()
-        ax.set_ylabel('FFT Bin Magnitude in dB', fontsize=20, loc='center')
-        ax.set_xlabel('Frequency in Hz', fontsize=20, loc='center')
+        ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
+        ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
-        ax.semilogx(self.x1, self.y1, '-')
+        ax.semilogx(self.x1, self.y1, '-', color='limegreen')
 
         ax.set_facecolor('xkcd:black')
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
-        ax.yaxis.set_ticks(np.arange(-100, 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
-        ax.set_ylim([-100, 0])
-        #ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.set_ylim([int(self.str_ybottom.get()), 0])
+        ax.yaxis.set_minor_locator(AutoMinorLocator(2))
         ax.xaxis.set_major_formatter(ScalarFormatter())
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
@@ -600,6 +617,40 @@ class mclass:
         self.plot_packed = 1
         canvas.mpl_connect('motion_notify_event', self.print_details)
         canvas.draw()
+
+    def replot(self):
+        #if SIM:
+            #sim change in data
+            #end of data sim
+
+        #now replot
+        self.fig.tight_layout()
+        ax = self.fig.get_axes()[0]
+        ax.clear()         # clear axes from previous plot !!!!
+        ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
+        ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
+        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
+        ax.set_xlim([20, 20000])
+        ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        #ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
+        ax.set_facecolor('xkcd:black')
+        ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
+        ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
+        #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
+        ax.set_ylim([int(self.str_ybottom.get()), 0])
+        ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+        ax.xaxis.set_major_formatter(ScalarFormatter())
+        self.fig.canvas.mpl_connect('motion_notify_event', self.print_details)
+        self.fig.canvas.draw()
+
+    def export(self):
+        if not len(self.x1):
+            messagebox.showerror("Export error", "No data to export")
+        else:
+            dict = {'bin': self.x1,'dB': self.y1}
+            pd.DataFrame(dict).to_csv('fft.csv', index=False)
+            messagebox.showinfo("Export", "Export completed - %s" % 'fft.csv')
 
     def _replot_thread(self):
         if DEBUG: print("THD replot thread running");
