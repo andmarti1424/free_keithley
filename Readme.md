@@ -15,6 +15,7 @@ Plotting / measurement software for Keithley 2015 THD multimeter
  - `matplotlib`
  - `python-pyserial`
  - `tkinter (tk)`
+ - `python-heapdict`
 
 ## Usage
 ```python thd_vs_power.py```

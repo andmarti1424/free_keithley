@@ -31,7 +31,7 @@ my RS232 times are:
 """
 
 # Some settings
-SIM = 0 # do not interact with equipment, just sim data
+SIM = 1 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
 DISPLAY = 0 # display on or off
 UPDATE_INTERVAL= 1 # only used on sim.
@@ -67,6 +67,9 @@ import threading
 from tkinter import messagebox
 import serial
 import numpy as np #for data sim
+from heapq import nsmallest, nlargest
+from scipy.signal import find_peaks
+import operator
 
 class mclass:
     def __init__(self,  window):
@@ -88,8 +91,11 @@ class mclass:
         self.x1 = []
         self.y1 = []
         if SIM:
-            self.x1 = [20, 50, 100, 200, 500, 900, 1000, 1060, 1080, 2000, 5000, 7500, 10000, 20000]
-            self.y1 = [-80, -70, -60, -82, -56, -75, 0, -70, -65, -70, -85, -82, -92, -75]
+            #self.x1 = [20, 50, 100, 200, 500, 900, 1000, 1060, 1080, 2000, 5000, 7500, 10000, 20000]
+            #self.y1 = [-80, -70, -60, -82, -56, -75, 0, -70, -65, -70, -85, -82, -92, -75]
+            df=pd.read_csv("fft.csv")
+            self.x1 = df["bin"].values.tolist()
+            self.y1 = df["dB"].values.tolist()
 
         #setup UI
         self.window['bg'] = 'silver'
@@ -156,7 +162,7 @@ class mclass:
         #y axis bottom value
         self.str_ybottom = StringVar()
         self.str_ybottom.set(BOTTOM_DB)
-        self.cmb_ybottom = ttk.Combobox(window, values=[-80,-90,-100, -110, -120, -130], textvariable=self.str_ybottom, font=('Courier New', 18), width=13)
+        self.cmb_ybottom = ttk.Combobox(window, values=[-60, -65, -70, -75, -80,-85, -90, -95, -100, -105, -110, -115, -120], textvariable=self.str_ybottom, font=('Courier New', 18), width=13)
         self.cmb_ybottom['state'] = 'readonly'
         self.cmb_ybottom.place(x = 245, y = 700)
         self.lbl_db2 = Label(window, text = "dB", font=('Courier New', 18), background=self.window['bg'])
@@ -216,6 +222,7 @@ class mclass:
         self.lbl_harm_details.place(x = 1080, y = 940)
         self.vline = None
         self.plotline = None
+        self.plotpeaks = None
 
         #focus
         self.etr_harm_qty.icursor(1)
@@ -399,7 +406,7 @@ class mclass:
 
             # return fundamental amplitude in Vrms
             res = self.send_cmd(':SENS:DIST:RMS?')
-            self.fundamental_vrms = float(res)
+            if res != '': self.fundamental_vrms = float(res)
             res = format(self.fundamental_vrms, '.6f')
             self.str_vac.set(res)
             if DEBUG: print("fundamental amplitude in Vrms: " + res)
@@ -590,19 +597,32 @@ class mclass:
             #x = event.xdata
             #y = format(event.ydata, '.2f')
 
-            #show closest value of data according to cursor position
-            xval = min(self.x1, key=lambda xval:abs(xval-event.xdata))
+            #keep track of 4 closest x values around cursor
+            closest = nsmallest(4, self.x1, key=lambda x: abs(x-event.xdata))
+            #if DEBUG: print("input freq: " , self.str_SIGGEN_freq.get())
+
+            # the closest 1
+            #xval = min(self.x1, key=lambda xval:abs(xval-event.xdata))
+            xval = closest[0]
             x_pos = self.x1.index(xval)
             y = self.y1[x_pos]
 
             self.str_harm_details.set(str(xval).rjust(6, " ") + " Hz" + ', ' + str(y).rjust(4, " ") + " dB")
 
+
+             # get closest peak around cursor
+            peaksx = operator.itemgetter(*self.peaks_indexes.tolist())(self.x1)
+            xpeak = min(peaksx, key=lambda xval:abs(xval-event.xdata))
+
+            #from the 4 closest values round cursor select the one with max Y value
+            #xpeak = max(closest, key=lambda x: self.y1[self.x1.index(x)])
+
+
+            #remove current peaks of graph
             ax = self.fig.get_axes()[0]
-
-            if self.vline is not None:
-                self.vline.remove()
-
-            self.vline = ax.axvline(x=xval, color='red', ls=':', lw=2)
+            if self.vline is not None: self.vline.remove()
+            #plot the vertical line over peak
+            self.vline = ax.axvline(x=xpeak, color='red', ls=':', lw=2)
 
             #try:
                 #self.fig.canvas.draw_idle()
@@ -634,20 +654,23 @@ class mclass:
         ax.set_facecolor('xkcd:black')
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
-        ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
+        #ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([int(self.str_ybottom.get()), 0])
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-        ax.xaxis.set_major_formatter(ScalarFormatter())
+
+        self.peaks_indexes, peak_dict = find_peaks(self.y1, height=(None, None))
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().place(relx=.65, rely=.46, anchor="c")
         self.plot_packed = 1
+        canvas.mpl_connect('scroll_event', self.mousewheel_move)
         canvas.mpl_connect('motion_notify_event', self.print_details)
         canvas.draw()
         canvas.flush_events()
 
     def replot(self):
+        return;
         #if SIM:
             #sim change in data
             #end of data sim
@@ -667,12 +690,32 @@ class mclass:
                 print(ax.lines.index(self.plotline))
                 pass
 
+        #plot peak points
+        self.peaks_indexes, peak_dict = find_peaks(self.y1, height=(None, None))
+        #prom = peak_dict['prominences']
+        peak_heights = peak_dict['peak_heights']
+
+        #tenmax = nlargest(10, prom)
+        tenmax = nlargest(10, peak_heights)
+
+        self.peaks_indexes = np.take(self.peaks_indexes, np.where(np.isin(peak_heights, tenmax))[0])
+        #self.peaks_indexes = np.take(self.peaks_indexes, np.where(np.isin(prom, tenmax))[0])
+
+        if self.plotpeaks is not None:
+            for p in self.plotpeaks:
+                p.remove()
+        self.plotpeaks = ax.plot(
+        operator.itemgetter(*self.peaks_indexes.tolist())(self.x1),
+        operator.itemgetter(*self.peaks_indexes.tolist())(self.y1)
+                , "P", color='cyan');
+
+
         #for line in ax.lines: ax.lines.pop(0)
         #ax.clear()         # clear axes from previous plot !!!!
         #ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
         #ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
-        #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
-        #ax.set_xlim([20, 20000])
+        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
+        ax.set_xlim([20, 20000])
         ax.semilogx(self.x1, self.y1, '-', color='limegreen')
         self.plotline = ax.lines[len(ax.lines)-1]
         #ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
@@ -683,7 +726,6 @@ class mclass:
         #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([int(self.str_ybottom.get()), 0])
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-        ax.xaxis.set_major_formatter(ScalarFormatter())
 
         #fig = plt.figure()
         #fig.canvas.mpl_connect('motion_notify_event', self.print_details)
@@ -736,6 +778,28 @@ class mclass:
     def measure_thread(self):
         self.mthread = threading.Thread(target=self._measure_thread)
         self.mthread.start()
+
+    def mousewheel_move(self, event):
+        freq_list = list()
+        for d in range(1, 5, 1):
+            for x in 2, 5, 10:
+                freq_list.append(x * (10 ** d))
+
+        ax = self.fig.get_axes()[0]
+        left, right = ax.get_xlim()
+        if event.button == "up":
+            new_left = left*2
+            new_right = right/2
+        if event.button == "down":
+            new_left = left/2
+            new_right = right*2
+
+        difference = lambda freq_list : abs(freq_list - new_left)
+        new_left = min(freq_list, key=difference)
+        difference = lambda freq_list : abs(freq_list - new_right)
+        new_right = min(freq_list, key=difference)
+        ax.set_xlim([new_left, new_right])
+
 
 window = Tk()
 start = mclass(window)
