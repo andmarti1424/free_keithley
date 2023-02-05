@@ -80,6 +80,7 @@ class mclass:
         self.plot_packed = 0 # avoid a re pack when refreshing plot
         self.fundamental_vrms = float(0) # set some initial value
         self.avoid_exit=0 # just in case we are waiting for FFT bins and try to exit before getting the entire response
+        self.on_mouse_routine = 0
 
         self.str_measurement_type = StringVar()
         if SIM:
@@ -221,6 +222,7 @@ class mclass:
         self.lbl_harm_details = Label(window, textvariable=self.str_harm_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
         self.lbl_harm_details.place(x = 1080, y = 940)
         self.vline = None
+        self.annotate = None
         self.plotline = None
         self.plotpeaks = None
 
@@ -592,6 +594,7 @@ class mclass:
     def print_details(self, event):
         if not len(self.x1): return
         if self.but_start['text'] == "ABORT": return
+        self.on_mouse_routine = 1
         if event.inaxes is not None:
             #show coordinates of cursor
             #x = event.xdata
@@ -607,29 +610,39 @@ class mclass:
             x_pos = self.x1.index(xval)
             y = self.y1[x_pos]
 
-            self.str_harm_details.set(str(xval).rjust(6, " ") + " Hz" + ', ' + str(y).rjust(4, " ") + " dB")
+            self.str_harm_details.set("cursor: " + str(xval).rjust(6, " ") + " Hz" + ', ' + str('{0:.2f}'.format(y)).rjust(4, " ") + " dB")
 
-
-             # get closest peak around cursor
+            # get closest peak around cursor
             peaksx = operator.itemgetter(*self.peaks_indexes.tolist())(self.x1)
             xpeak = min(peaksx, key=lambda xval:abs(xval-event.xdata))
 
             #from the 4 closest values round cursor select the one with max Y value
             #xpeak = max(closest, key=lambda x: self.y1[self.x1.index(x)])
 
-
-            #remove current peaks of graph
+            #remove current peaks line in graph
             ax = self.fig.get_axes()[0]
             if self.vline is not None: self.vline.remove()
+
             #plot the vertical line over peak
             self.vline = ax.axvline(x=xpeak, color='red', ls=':', lw=2)
 
-            #try:
+            new_data = "\n peak: %s Hz, %s dB" % ( str(xpeak).rjust(6, " "), str('{0:.2f}'.format(self.y1[self.x1.index(xpeak)])).rjust(4, " "))
+            self.str_harm_details.set(self.str_harm_details.get() + new_data)
+
+            """
+            FIXME
+            #remove current peak detail and plot it
+            if self.annotate is not None: self.annotate.remove()
+            self.annotate = ax.annotate("%s, %s" % ( str(xpeak) , str(self.y1[self.x1.index(xpeak)])), xy =(xpeak, self.y1[self.x1.index(xpeak)]), color='cyan')
+            try:
                 #self.fig.canvas.draw_idle()
-            #    self.fig.canvas.draw()
-            #    self.fig.canvas.flush_events()
-            #except:
-            #    time.sleep(1)
+                self.fig.canvas.draw()
+                self.fig.canvas.flush_events()
+            except:
+                print("error1")
+                time.sleep(1)
+            """
+
 
             #window.after(500, self.fig.canvas.draw())
             #ax.figure.canvas.draw()
@@ -637,57 +650,66 @@ class mclass:
             #fig.canvas.flush_events()
             #plt.pause(0.000000000001)
             #self.fig.canvas.draw()
+            self.on_mouse_routine = 0
 
     def plot(self):
         self.fig, ax = plt.subplots(figsize=(13, 7))
-        self.fig.tight_layout()
-        ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
-        ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
-        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
-        ax.set_xlim([20, 20000])
-
-        fig = plt.figure()
-        fig.canvas.draw()
-        self.plotdata = ax.semilogx(self.x1, self.y1, '-', color='limegreen')
-        self.plotline = ax.lines[len(ax.lines)-1]
-
+        #self.fig.tight_layout()
+        plt.rcParams['toolbar'] = 'None'
+        self.fig.set_facecolor(self.window['bg'])
+        ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
+        ax.set(xscale="log")
         ax.set_facecolor('xkcd:black')
+        ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=12, loc='center')
+        ax.set_xlabel('Frequency, Hz', fontsize=12, loc='center')
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
+        #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
+        ax.set_xlim([20, 20000])
         ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
-        #ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
-        #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
-        ax.set_ylim([int(self.str_ybottom.get()), 0])
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+        #ax.tick_params(axis='x',which='minor',direction='out',bottom=True,length=5)
+        ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
+        ax.set_ylim([int(self.str_ybottom.get()), 0])
 
+        self.plotdata = ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        # this set xticks have to be after semilogx
+        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
+        self.plotline = ax.lines[len(ax.lines)-1]
         self.peaks_indexes, peak_dict = find_peaks(self.y1, height=(None, None))
+        self.plot_packed = 1
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         canvas.get_tk_widget().place(relx=.65, rely=.46, anchor="c")
-        self.plot_packed = 1
         canvas.mpl_connect('scroll_event', self.mousewheel_move)
         canvas.mpl_connect('motion_notify_event', self.print_details)
         canvas.draw()
         canvas.flush_events()
+        #canvas.draw_idle()
+        #do not use:
+        #canvas.start_event_loop(0.05)
+
+        #ax.figure.canvas.draw()
+        #ax.figure.canvas.start_event_loop(0.05)
+        #ax.figure.canvas.draw()
+        #ax.figure.canvas.flush_events()
+        return
 
     def replot(self):
-        return;
-        #if SIM:
-            #sim change in data
-            #end of data sim
-
-        #now replot
-        try:
-            self.fig.tight_layout()
-        except:
-            pass
         ax = self.fig.get_axes()[0]
+        try:
+            if self.on_mouse_routine == 0: self.fig.tight_layout()
+        except:
+            #FIXME
+            #print("error 2 tight layout")
+            #time.sleep(1)
+            pass
 
         #ax.lines.pop(0) #remove first line from graph insted of clearing
         if self.plotline is not None:
             try:
                 ax.lines.pop(ax.lines.index(self.plotline))
             except:
-                print(ax.lines.index(self.plotline))
+                #print(ax.lines.index(self.plotline))
                 pass
 
         #plot peak points
@@ -701,22 +723,21 @@ class mclass:
         self.peaks_indexes = np.take(self.peaks_indexes, np.where(np.isin(peak_heights, tenmax))[0])
         #self.peaks_indexes = np.take(self.peaks_indexes, np.where(np.isin(prom, tenmax))[0])
 
+        #if self.on_mouse_routine == 0: ax.figure.canvas.draw()
+
         if self.plotpeaks is not None:
             for p in self.plotpeaks:
                 p.remove()
-        self.plotpeaks = ax.plot(
-        operator.itemgetter(*self.peaks_indexes.tolist())(self.x1),
-        operator.itemgetter(*self.peaks_indexes.tolist())(self.y1)
-                , "P", color='cyan');
+        self.plotpeaks = ax.plot( operator.itemgetter(*self.peaks_indexes.tolist())(self.x1), operator.itemgetter(*self.peaks_indexes.tolist())(self.y1) , "P", color='cyan');
 
 
         #for line in ax.lines: ax.lines.pop(0)
         #ax.clear()         # clear axes from previous plot !!!!
         #ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
         #ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
-        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
-        ax.set_xlim([20, 20000])
         ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
+        #ax.set_xlim([20, 20000])
         self.plotline = ax.lines[len(ax.lines)-1]
         #ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         #ax.set_facecolor('xkcd:black')
@@ -727,15 +748,17 @@ class mclass:
         ax.set_ylim([int(self.str_ybottom.get()), 0])
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
 
-        #fig = plt.figure()
-        #fig.canvas.mpl_connect('motion_notify_event', self.print_details)
-        #fig.canvas.draw()
-        #fig.canvas.flush_events()
-        self.fig.canvas.draw()
-        #self.fig.canvas.draw()
-        #window.after(50, ax.figure.canvas.draw())
-        ax.figure.canvas.flush_events()
-        #ax.figure.canvas.draw_idle()
+        try:
+            if self.on_mouse_routine == 0 and ax != None:
+            #canvas.flush_events()
+                #window.after(100, ax.figure.canvas.draw())
+                ax.figure.canvas.draw()
+                #ax.figure.canvas.flush_events()
+            #ax.figure.canvas.start_event_loop(0.05)
+            #ax.figure.canvas.draw_idle()
+        except:
+            print("error 2")
+            pass
 
     def export(self):
         if not len(self.x1):
@@ -756,18 +779,14 @@ class mclass:
         if DEBUG: print("THD replot thread running");
 
         while self.running:
-            #if DEBUG: print("calculate power");
-            #self.measure_vca()
-            #if DEBUG: print("remeasuring THD");
-            #self.measure_thd() #and get fft bins
-
             if DEBUG: print("re plotting")
-            self.replot()
 
             if SIM:
                  #time.sleep(UPDATE_INTERVAL)
                  self.y1[2]-= 2
                  if self.y1[2] <= -90: self.y1[2]-= -75
+
+            self.replot()
 
         if DEBUG: print("END running THD replot thread");
 
@@ -780,6 +799,7 @@ class mclass:
         self.mthread.start()
 
     def mousewheel_move(self, event):
+        self.on_mouse_routine = 1
         freq_list = list()
         for d in range(1, 5, 1):
             for x in 2, 5, 10:
@@ -799,10 +819,11 @@ class mclass:
         difference = lambda freq_list : abs(freq_list - new_right)
         new_right = min(freq_list, key=difference)
         ax.set_xlim([new_left, new_right])
+        self.on_mouse_routine = 0
 
 
 window = Tk()
 start = mclass(window)
-start.replot_thread()
 start.measure_thread()
+start.replot_thread()
 window.mainloop()
