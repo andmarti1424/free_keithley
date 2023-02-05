@@ -671,7 +671,9 @@ class mclass:
         ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([int(self.str_ybottom.get()), 0])
 
-        self.plotdata = ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        #self.plotdata = ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        #ax.semilogx(self.x1, self.y1, '-', color='tab:blue')
+        ax.semilogx(self.x1, self.y1, '-', color='dodgerblue')
         # this set xticks have to be after semilogx
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         self.plotline = ax.lines[len(ax.lines)-1]
@@ -735,9 +737,12 @@ class mclass:
         #ax.clear()         # clear axes from previous plot !!!!
         #ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
         #ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
-        ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        left, right = ax.get_xlim()
+        #ax.semilogx(self.x1, self.y1, '-', color='limegreen')
+        #ax.semilogx(self.x1, self.y1, '-', color='tab:blue')
+        ax.semilogx(self.x1, self.y1, '-', color='dodgerblue')
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
-        #ax.set_xlim([20, 20000])
+        ax.set_xlim([left, right])
         self.plotline = ax.lines[len(ax.lines)-1]
         #ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
         #ax.set_facecolor('xkcd:black')
@@ -813,6 +818,11 @@ class mclass:
         if event.button == "down":
             new_left = left/2
             new_right = right*2
+
+        if new_left > new_right:
+            a = new_left
+            new_left = new_right
+            new_right = a
 
         difference = lambda freq_list : abs(freq_list - new_left)
         new_left = min(freq_list, key=difference)
