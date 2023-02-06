@@ -44,7 +44,7 @@ class mclass:
         self.abort = 0
 
         # setup UI
-        self.window['bg'] = 'silver'
+        #self.window['bg'] = 'silver'
         self.colors=['white', 'salmon', 'deepskyblue', 'limegreen']
         self.str_title = StringVar()
 

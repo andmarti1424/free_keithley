@@ -42,7 +42,7 @@ class mclass:
         self.colors=['whitesmoke', 'crimson', 'deepskyblue', 'limegreen']
         self.colors_det=['whitesmoke', 'crimson', 'blue', 'darkgreen']
         self.str_title = StringVar()
-        self.window['bg'] = 'silver'
+        #self.window['bg'] = 'silver'
 
         # TYPE OF MEASUREMENT radio button
         self.lbl_harm_qty = Label(window, text = "Measure:", font=('Courier New', 18), background=self.window['bg'])

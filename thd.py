@@ -49,7 +49,7 @@ class mclass:
             self.start_serial()
 
         #setup UI
-        self.window['bg'] = 'silver'
+        #self.window['bg'] = 'silver'
 
         self.lbl_title = Label(window, text='Keithley 2015 - THD measurement', fg='#1C5AAC', font=('Courier New', 24, 'bold'), background=self.window['bg'])
         self.lbl_title.pack(ipady=15, expand=False, side=TOP)

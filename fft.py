@@ -12,12 +12,14 @@
 """
 TODO
 
-#1. add check to enable/disable LCD
+#1. click and move over plot to change start or end value
+fig.canvas.mpl_connect('button_press_event', button_press_callback)
+fig.canvas.mpl_connect('button_release_event', button_release_callback)
+fig.canvas.mpl_connect('motion_notify_event', motion_notify_callback)
 
-#2. Add entry box to set bottom Y scale
+#2. add check to enable/disable LCD
 
-
-#6. in change state, add same validations, just as
+#3. in change state, add same validations, just as
 # check here that internal WG freq is valid
 # check qty of harm is numeric
 # check ohms is numeric and 4, 8 or 16 ohms
@@ -81,6 +83,9 @@ class mclass:
         self.fundamental_vrms = float(0) # set some initial value
         self.avoid_exit=0 # just in case we are waiting for FFT bins and try to exit before getting the entire response
         self.on_mouse_routine = 0
+        self.leftb=0 #mouse button pressed
+        self.xinit_pos=0
+        self.xcurr_pos=0
 
         self.str_measurement_type = StringVar()
         if SIM:
@@ -99,7 +104,7 @@ class mclass:
             self.y1 = df["dB"].values.tolist()
 
         #setup UI
-        self.window['bg'] = 'silver'
+        #self.window['bg'] = 'silver'
 
         self.lbl_title = Label(window, text='Keithley 2015 - FFT measurement', fg='#1C5AAC', font=('Courier New', 24, 'bold'), background=self.window['bg'])
         self.lbl_title.pack(ipady=15, expand=False, side=TOP)
@@ -594,6 +599,51 @@ class mclass:
     def print_details(self, event):
         if not len(self.x1): return
         if self.but_start['text'] == "ABORT": return
+
+
+        #left button of mouse pressed. changing left and right limits
+        if self.leftb == 1:
+            ax = self.fig.get_axes()[0]
+
+            freq_list = list()
+            for d in range(1, 5, 1):
+                for x in range(2, 11, 1):
+                    freq_list.append(x * (10 ** d))
+                    if d == 4 and x == 2: break
+
+            self.xcurr_pos = event.xdata
+            if self.xinit_pos == None or self.xcurr_pos == None: return
+            #print(self.xinit_pos)
+            #print(self.xcurr_pos)
+            left, right = ax.get_xlim()
+            if (self.xcurr_pos >= self.xinit_pos):
+                span=self.xcurr_pos - self.xinit_pos
+                #print("der")
+            #muevo para la derecha. disminuye derecha e izq
+                new_right = right-span
+                difference = lambda freq_list : abs(freq_list - new_right)
+                new_right = min(freq_list, key=difference)
+
+                new_left = left-span
+                difference = lambda freq_list : abs(freq_list - new_left)
+                new_left = min(freq_list, key=difference)
+
+            #muevo para la izq. aumento el de la derecha e izq.
+            else:
+                span=self.xinit_pos - self.xcurr_pos
+                #print("izq")
+                new_left = left+span
+                difference = lambda freq_list : abs(freq_list - new_left)
+                new_left = min(freq_list, key=difference)
+
+                new_right = right+span
+                difference = lambda freq_list : abs(freq_list - new_right)
+                new_right = min(freq_list, key=difference)
+
+            if left != new_left and right != new_right and new_left != new_right: ax.set_xlim(left=new_left)
+            if left != new_left and right != new_right and new_left != new_right: ax.set_xlim(right=new_right)
+            return
+
         self.on_mouse_routine = 1
         if event.inaxes is not None:
             #show coordinates of cursor
@@ -684,6 +734,10 @@ class mclass:
         canvas.get_tk_widget().place(relx=.65, rely=.46, anchor="c")
         canvas.mpl_connect('scroll_event', self.mousewheel_move)
         canvas.mpl_connect('motion_notify_event', self.print_details)
+
+        canvas.mpl_connect('button_press_event', self.button_press_callback)
+        canvas.mpl_connect('button_release_event', self.button_release_callback)
+
         canvas.draw()
         canvas.flush_events()
         #canvas.draw_idle()
@@ -803,12 +857,23 @@ class mclass:
         self.mthread = threading.Thread(target=self._measure_thread)
         self.mthread.start()
 
+    def button_press_callback(self, event):
+        self.leftb=1
+        self.xinit_pos=event.xdata
+        #print(event)
+
+    def button_release_callback(self, event):
+        self.leftb=0
+        self.xinit_pos=0
+        #print(event)
+
     def mousewheel_move(self, event):
         self.on_mouse_routine = 1
         freq_list = list()
         for d in range(1, 5, 1):
-            for x in 2, 5, 10:
+            for x in range(2, 11, 1):
                 freq_list.append(x * (10 ** d))
+                if d == 4 and x == 2: break
 
         ax = self.fig.get_axes()[0]
         left, right = ax.get_xlim()
@@ -828,7 +893,8 @@ class mclass:
         new_left = min(freq_list, key=difference)
         difference = lambda freq_list : abs(freq_list - new_right)
         new_right = min(freq_list, key=difference)
-        ax.set_xlim([new_left, new_right])
+        if right != new_right: ax.set_xlim(right=new_right)
+        if left != new_left: ax.set_xlim(left=new_left)
         self.on_mouse_routine = 0
 
 
