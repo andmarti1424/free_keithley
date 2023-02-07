@@ -230,6 +230,7 @@ class mclass:
         self.annotate = None
         self.plotline = None
         self.plotpeaks = None
+        self.current_peak = None
 
         #focus
         self.etr_harm_qty.icursor(1)
@@ -596,112 +597,6 @@ class mclass:
             self.replot_thread()
             self.measure_thread()
 
-    def print_details(self, event):
-        if not len(self.x1): return
-        if self.but_start['text'] == "ABORT": return
-
-
-        #left button of mouse pressed. changing left and right limits
-        if self.leftb == 1:
-            ax = self.fig.get_axes()[0]
-
-            freq_list = list()
-            for d in range(1, 5, 1):
-                for x in range(2, 11, 1):
-                    freq_list.append(x * (10 ** d))
-                    if d == 4 and x == 2: break
-
-            self.xcurr_pos = event.xdata
-            if self.xinit_pos == None or self.xcurr_pos == None: return
-            #print(self.xinit_pos)
-            #print(self.xcurr_pos)
-            left, right = ax.get_xlim()
-            if (self.xcurr_pos >= self.xinit_pos):
-                span=self.xcurr_pos - self.xinit_pos
-                #print("der")
-            #muevo para la derecha. disminuye derecha e izq
-                new_right = right-span
-                difference = lambda freq_list : abs(freq_list - new_right)
-                new_right = min(freq_list, key=difference)
-
-                new_left = left-span
-                difference = lambda freq_list : abs(freq_list - new_left)
-                new_left = min(freq_list, key=difference)
-
-            #muevo para la izq. aumento el de la derecha e izq.
-            else:
-                span=self.xinit_pos - self.xcurr_pos
-                #print("izq")
-                new_left = left+span
-                difference = lambda freq_list : abs(freq_list - new_left)
-                new_left = min(freq_list, key=difference)
-
-                new_right = right+span
-                difference = lambda freq_list : abs(freq_list - new_right)
-                new_right = min(freq_list, key=difference)
-
-            if left != new_left and right != new_right and new_left != new_right: ax.set_xlim(left=new_left)
-            if left != new_left and right != new_right and new_left != new_right: ax.set_xlim(right=new_right)
-            return
-
-        self.on_mouse_routine = 1
-        if event.inaxes is not None:
-            #show coordinates of cursor
-            #x = event.xdata
-            #y = format(event.ydata, '.2f')
-
-            #keep track of 4 closest x values around cursor
-            closest = nsmallest(4, self.x1, key=lambda x: abs(x-event.xdata))
-            #if DEBUG: print("input freq: " , self.str_SIGGEN_freq.get())
-
-            # the closest 1
-            #xval = min(self.x1, key=lambda xval:abs(xval-event.xdata))
-            xval = closest[0]
-            x_pos = self.x1.index(xval)
-            y = self.y1[x_pos]
-
-            self.str_harm_details.set("cursor: " + str(xval).rjust(6, " ") + " Hz" + ', ' + str('{0:.2f}'.format(y)).rjust(4, " ") + " dB")
-
-            # get closest peak around cursor
-            peaksx = operator.itemgetter(*self.peaks_indexes.tolist())(self.x1)
-            xpeak = min(peaksx, key=lambda xval:abs(xval-event.xdata))
-
-            #from the 4 closest values round cursor select the one with max Y value
-            #xpeak = max(closest, key=lambda x: self.y1[self.x1.index(x)])
-
-            #remove current peaks line in graph
-            ax = self.fig.get_axes()[0]
-            if self.vline is not None: self.vline.remove()
-
-            #plot the vertical line over peak
-            self.vline = ax.axvline(x=xpeak, color='red', ls=':', lw=2)
-
-            new_data = "\n peak: %s Hz, %s dB" % ( str(xpeak).rjust(6, " "), str('{0:.2f}'.format(self.y1[self.x1.index(xpeak)])).rjust(4, " "))
-            self.str_harm_details.set(self.str_harm_details.get() + new_data)
-
-            """
-            FIXME
-            #remove current peak detail and plot it
-            if self.annotate is not None: self.annotate.remove()
-            self.annotate = ax.annotate("%s, %s" % ( str(xpeak) , str(self.y1[self.x1.index(xpeak)])), xy =(xpeak, self.y1[self.x1.index(xpeak)]), color='cyan')
-            try:
-                #self.fig.canvas.draw_idle()
-                self.fig.canvas.draw()
-                self.fig.canvas.flush_events()
-            except:
-                print("error1")
-                time.sleep(1)
-            """
-
-
-            #window.after(500, self.fig.canvas.draw())
-            #ax.figure.canvas.draw()
-            #fig = plt.figure()
-            #fig.canvas.flush_events()
-            #plt.pause(0.000000000001)
-            #self.fig.canvas.draw()
-            self.on_mouse_routine = 0
-
     def plot(self):
         self.fig, ax = plt.subplots(figsize=(13, 7))
         #self.fig.tight_layout()
@@ -727,7 +622,7 @@ class mclass:
         # this set xticks have to be after semilogx
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         self.plotline = ax.lines[len(ax.lines)-1]
-        self.peaks_indexes, peak_dict = find_peaks(self.y1, height=(None, None))
+        self.peaks_indexes, peak_dict = find_peaks(self.y1, height=(None, None), prominence=5)
         self.plot_packed = 1
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
@@ -755,42 +650,56 @@ class mclass:
         try:
             if self.on_mouse_routine == 0: self.fig.tight_layout()
         except:
-            #FIXME
-            #print("error 2 tight layout")
-            #time.sleep(1)
-            pass
+             #print("error 2 tight layout")
+             pass
 
         #ax.lines.pop(0) #remove first line from graph insted of clearing
         if self.plotline is not None:
             try:
                 ax.lines.pop(ax.lines.index(self.plotline))
             except:
+                #print("error 3 replot_")
                 #print(ax.lines.index(self.plotline))
                 pass
 
         #plot peak points
-        self.peaks_indexes, peak_dict = find_peaks(self.y1, height=(None, None))
+        left, right = ax.get_xlim()
+        l_nearest = self.find_nearest(self.x1, value=left)
+        r_nearest = self.find_nearest(self.x1, value=right)
+        l_index = self.x1.index(l_nearest)
+        r_index = self.x1.index(r_nearest)
+        self.peaks_indexes, peak_dict = find_peaks(self.y1[l_index:r_index+1], height=(None, None), prominence=5)
+
+        #self.peaks_indexes, peak_dict = find_peaks(self.y1, height=(None, None))
         #prom = peak_dict['prominences']
         peak_heights = peak_dict['peak_heights']
 
         #tenmax = nlargest(10, prom)
         tenmax = nlargest(10, peak_heights)
 
-        self.peaks_indexes = np.take(self.peaks_indexes, np.where(np.isin(peak_heights, tenmax))[0])
-        #self.peaks_indexes = np.take(self.peaks_indexes, np.where(np.isin(prom, tenmax))[0])
+        if tenmax != None:
+            self.peaks_indexes = np.take(self.peaks_indexes, np.where(np.isin(peak_heights, tenmax))[0])
 
-        #if self.on_mouse_routine == 0: ax.figure.canvas.draw()
+            # remove current peak annotation
+            if self.annotate is not None:
+                self.annotate.remove()
+                self.annotate = None
 
-        if self.plotpeaks is not None:
-            for p in self.plotpeaks:
-                p.remove()
-        self.plotpeaks = ax.plot( operator.itemgetter(*self.peaks_indexes.tolist())(self.x1), operator.itemgetter(*self.peaks_indexes.tolist())(self.y1) , "P", color='cyan');
+            if len(self.peaks_indexes) > 0:
+                if self.plotpeaks is not None:
+                    for p in self.plotpeaks:
+                        p.remove()
+                self.plotpeaks = ax.plot( operator.itemgetter(*self.peaks_indexes.tolist())(self.x1[l_index:r_index+1]),
+                                          operator.itemgetter(*self.peaks_indexes.tolist())(self.y1[l_index:r_index+1]) , "P", color='cyan');
+
+                if self.current_peak is not None and self.y1[self.x1.index(self.current_peak)] != 0:
+                    # plot current peak annotation
+                    self.annotate = ax.annotate("%s, %s" % ( str(self.current_peak), format(self.y1[self.x1.index(self.current_peak)], '.2f')),
+                            xy = (self.current_peak, self.y1[self.x1.index(self.current_peak)]),
+                            xytext = (self.current_peak, self.y1[self.x1.index(self.current_peak)]+5), color='cyan', fontsize=12)
 
 
-        #for line in ax.lines: ax.lines.pop(0)
-        #ax.clear()         # clear axes from previous plot !!!!
-        #ax.set_ylabel('FFT Bin Magnitude, dB', fontsize=20, loc='center')
-        #ax.set_xlabel('Frequency, Hz', fontsize=20, loc='center')
+        #redraw FFT curve
         left, right = ax.get_xlim()
         #ax.semilogx(self.x1, self.y1, '-', color='limegreen')
         #ax.semilogx(self.x1, self.y1, '-', color='tab:blue')
@@ -798,25 +707,17 @@ class mclass:
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([left, right])
         self.plotline = ax.lines[len(ax.lines)-1]
-        #ax.grid(color = 'slategray', linestyle = '--', linewidth = 0.5, which='minor')
-        #ax.set_facecolor('xkcd:black')
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
-        #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([int(self.str_ybottom.get()), 0])
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
 
         try:
             if self.on_mouse_routine == 0 and ax != None:
-            #canvas.flush_events()
-                #window.after(100, ax.figure.canvas.draw())
                 ax.figure.canvas.draw()
-                #ax.figure.canvas.flush_events()
-            #ax.figure.canvas.start_event_loop(0.05)
-            #ax.figure.canvas.draw_idle()
         except:
-            print("error 2")
+            print("error 2 replot redrawing")
             pass
 
     def export(self):
@@ -849,6 +750,12 @@ class mclass:
 
         if DEBUG: print("END running THD replot thread");
 
+
+    def find_nearest(self, array, value):
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return array[idx]
+
     def replot_thread(self):
         self.thread = threading.Thread(target=self._replot_thread)
         self.thread.start()
@@ -867,6 +774,95 @@ class mclass:
         self.xinit_pos=0
         #print(event)
 
+    def print_details(self, event):
+        if not len(self.x1): return
+        if self.but_start['text'] == "ABORT": return
+        ax = self.fig.get_axes()[0]
+
+        #mouse left button pressed. changing left and right limits
+        if self.leftb == 1:
+            freq_list = list()
+            for d in range(1, 5, 1):
+                for x in range(2, 11, 1):
+                    freq_list.append(x * (10 ** d))
+                    if d == 4 and x == 2: break
+
+            self.xcurr_pos = event.xdata
+            if self.xinit_pos == None or self.xcurr_pos == None: return
+            #print(self.xinit_pos)
+            #print(self.xcurr_pos)
+            left, right = ax.get_xlim()
+
+            #muevo para la derecha. disminuye derecha e izq
+            if (self.xcurr_pos >= self.xinit_pos):
+                span=self.xcurr_pos - self.xinit_pos
+                #print("der")
+                new_right = right-span
+                if new_right > 20000: new_right = 20000
+                if right != new_right and left != new_right: ax.set_xlim(right=new_right)
+
+            #muevo para la izq. aumento el de la derecha e izq.
+            else:
+                span=self.xinit_pos - self.xcurr_pos
+                #print("izq")
+                new_left = left+span
+                if new_left < 20: new_left = 20
+                if left != new_left and new_left != right: ax.set_xlim(left=new_left)
+
+            return
+
+        self.on_mouse_routine = 1
+        if event.inaxes is not None:
+            #show coordinates of cursor
+            #x = event.xdata
+            #y = format(event.ydata, '.2f')
+
+            #keep track of 4 closest x values around cursor
+            closest = nsmallest(4, self.x1, key=lambda x: abs(x-event.xdata))
+            #if DEBUG: print("input freq: " , self.str_SIGGEN_freq.get())
+
+            # the closest 1
+            #xval = min(self.x1, key=lambda xval:abs(xval-event.xdata))
+            xval = closest[0]
+            x_pos = self.x1.index(xval)
+            y = self.y1[x_pos]
+
+            self.str_harm_details.set("cursor: " + str(xval).rjust(6, " ") + " Hz" + ', ' + str('{0:.2f}'.format(y)).rjust(4, " ") + " dB")
+
+            # draw line over closest peak around cursor
+            left, right = ax.get_xlim()
+            l_nearest = self.find_nearest(self.x1, value=left)
+            r_nearest = self.find_nearest(self.x1, value=right)
+            l_index = self.x1.index(l_nearest)
+            r_index = self.x1.index(r_nearest)
+            self.peaks_indexes, peak_dict = find_peaks(self.y1[l_index:r_index+1], height=(None, None), prominence=5)
+            peak_heights = peak_dict['peak_heights']
+            tenmax = nlargest(10, peak_heights)
+            if tenmax != None: self.peaks_indexes = np.take(self.peaks_indexes, np.where(np.isin(peak_heights, tenmax))[0])
+            if len(self.peaks_indexes.tolist())>1:
+                peaksx = operator.itemgetter( *self.peaks_indexes.tolist())( self.x1[l_index:r_index+1])
+                xpeak = min(peaksx, key=lambda xval:abs(xval-event.xdata))
+
+                #remove current peaks line in graph
+                if self.vline is not None: self.vline.remove()
+
+                #plot the vertical line over peak
+                #TODO move this to replot?
+                self.vline = ax.axvline(x=xpeak, color='red', ls=':', lw=2)
+
+                new_data = "\n peak: %s Hz, %s dB" % ( str(xpeak).rjust(6, " "), str('{0:.2f}'.format(self.y1[self.x1.index(xpeak)])).rjust(4, " "))
+                self.str_harm_details.set(self.str_harm_details.get() + new_data)
+
+                self.current_peak = xpeak
+
+            #window.after(500, self.fig.canvas.draw())
+            #ax.figure.canvas.draw()
+            #fig = plt.figure()
+            #fig.canvas.flush_events()
+            #plt.pause(0.000000000001)
+            #self.fig.canvas.draw()
+            self.on_mouse_routine = 0
+
     def mousewheel_move(self, event):
         self.on_mouse_routine = 1
         freq_list = list()
@@ -877,24 +873,42 @@ class mclass:
 
         ax = self.fig.get_axes()[0]
         left, right = ax.get_xlim()
+
+        #sit in valid position according to previous freq_list values
+        difference = lambda freq_list : abs(freq_list - left)
+        left = min(freq_list, key=difference)
+        difference = lambda freq_list : abs(freq_list - right)
+        right = min(freq_list, key=difference)
+        le = freq_list.index(left)
+        ri = freq_list.index(right)
+
+        new_left = left
+        new_right = right
+
+        #TODO
+        #se divide la pantalla en 4 |-|-|-|-|
+        #si está en extremo izq, no se mueve left y si right
+        #si está en extremo derecho, no se mueve right y si left
+        #en los otros dos se aumentan y disminuyen ambos
+        #width = right - left
+        #forth = width / 4
+        #print("\n\n\n\nwidth:%d, forth: %d" % (width, forth))
+        #xcursor = event.x
+
         if event.button == "up":
-            new_left = left*2
-            new_right = right/2
+            if le < len(freq_list): new_left = freq_list[le+1]
+            if ri+1 > 0: new_right = freq_list[ri-1]
+
         if event.button == "down":
-            new_left = left/2
-            new_right = right*2
+            if le > 0: new_left = freq_list[le-1]
+            if ri+1 < len(freq_list): new_right = freq_list[ri+1]
 
         if new_left > new_right:
-            a = new_left
-            new_left = new_right
-            new_right = a
+            print("cannot zoom no longer")
+            return
 
-        difference = lambda freq_list : abs(freq_list - new_left)
-        new_left = min(freq_list, key=difference)
-        difference = lambda freq_list : abs(freq_list - new_right)
-        new_right = min(freq_list, key=difference)
-        if right != new_right: ax.set_xlim(right=new_right)
-        if left != new_left: ax.set_xlim(left=new_left)
+        if left != new_left and right != new_right and new_left != new_right: ax.set_xlim(left=new_left)
+        if left != new_left and right != new_right and new_left != new_right: ax.set_xlim(right=new_right)
         self.on_mouse_routine = 0
 
 
