@@ -36,11 +36,11 @@ or..
 
 ## Screenshots
 ![demo image](screenshots/thdp.jpg)
-![demo image](screenshots/logger.jpg)
+![demo image](screenshots/logger2.jpg)
 ![demo image](screenshots/a3.jpg)
 ![demo image](screenshots/thdf.jpg)
 ![demo image](screenshots/freq_resp.jpg)
-![demo image](screenshots/fft.jpg)
+![demo image](screenshots/fft4.jpg)
 
 ## Donations
 Pleeease support the development of this app by making a DONATION with PayPal.
