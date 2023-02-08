@@ -1,4 +1,4 @@
-#SOURCE:
+#SOURCE
 #https://download.tek.com/manual/2015-900-01(F-Aug2003)(User).pdf
 #https://www.head-case.org/forums/topic/21432-the-keithley-2015-and-2016-audio-analysing-multi-meters-guide-to-behaviour-limitations-and-issues/
 #https://www.eevblog.com/forum/testgear/keithley-2015-thd-with-fft-and-harmonic-graphs/
@@ -99,7 +99,7 @@ class mclass:
         if SIM:
             #self.x1 = [20, 50, 100, 200, 500, 900, 1000, 1060, 1080, 2000, 5000, 7500, 10000, 20000]
             #self.y1 = [-80, -70, -60, -82, -56, -75, 0, -70, -65, -70, -85, -82, -92, -75]
-            df=pd.read_csv("fft.csv")
+            df=pd.read_csv("fft_testdata.csv")
             self.x1 = df["bin"].values.tolist()
             self.y1 = df["dB"].values.tolist()
 
@@ -145,8 +145,8 @@ class mclass:
         self.lbl_SIGGEN_Vrms = Label(self.siggenFrame, text="Vrms", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.internal_SIGGEN_click()
 
-        self.powerFrame = LabelFrame(window, text="", height=200, width=520, background=self.window['bg'])
-        self.powerFrame.place(x = 30, y = 780)
+        self.powerFrame = LabelFrame(window, text="", height=180, width=520, background=self.window['bg'])
+        self.powerFrame.place(x = 40, y = 840)
         self.lbl_power = Label(self.powerFrame, text="Calculate power", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.lbl_power.place(x = 10, y = 10)
         self.chk_power_var = IntVar()
@@ -175,6 +175,29 @@ class mclass:
         self.lbl_db2.place(x = 450, y = 700)
         self.lbl_ybottom = Label(window, text="Y axis bottom", font=('Courier New', 18), wraplength=200, justify='left', background=self.window['bg'])
         self.lbl_ybottom.place(x = 40, y = 700)
+
+        #start freq
+        self.str_startfreq = StringVar()
+        self.str_startfreq.set(20)
+        self.cmb_startfreq = ttk.Combobox(window, values=[20, 40, 50, 100, 200, 400, 500, 1000], textvariable=self.str_startfreq, font=('Courier New', 18), width=13)
+        self.cmb_startfreq['state'] = 'readonly'
+        self.cmb_startfreq.place(x = 245, y = 740)
+        self.lbl_Hz2 = Label(window, text = "Hz", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_Hz2.place(x = 450, y = 740)
+        self.lbl_ystartfreq = Label(window, text="start freq.", font=('Courier New', 18), wraplength=200, justify='left', background=self.window['bg'])
+        self.lbl_ystartfreq.place(x = 40, y = 740)
+
+        #stop freq
+        self.str_stopfreq = StringVar()
+        self.str_stopfreq.set(20000)
+        self.cmb_stopfreq = ttk.Combobox(window, values=[2000, 4000, 5000, 10000, 20000], textvariable=self.str_stopfreq, font=('Courier New', 18), width=13)
+        self.cmb_stopfreq['state'] = 'readonly'
+        self.cmb_stopfreq.place(x = 245, y = 780)
+        self.lbl_Hz3 = Label(window, text = "Hz", font=('Courier New', 18), background=self.window['bg'])
+        self.lbl_Hz3.place(x = 450, y = 780)
+        self.lbl_ystopfreq = Label(window, text="stop  freq.", font=('Courier New', 18), wraplength=200, justify='left', background=self.window['bg'])
+        self.lbl_ystopfreq.place(x = 40, y = 780)
+
 
         # measurement results
         self.lbl_Fundamental = Label(window, text = "Fundamental", font=('Courier New', 18), background=self.window['bg'])
@@ -225,7 +248,7 @@ class mclass:
         # label for cursor location
         self.str_harm_details = StringVar()
         self.lbl_harm_details = Label(window, textvariable=self.str_harm_details, font=('Courier New', 18, 'bold'), background=self.window['bg'])
-        self.lbl_harm_details.place(x = 1080, y = 940)
+        self.lbl_harm_details.place(x = 600, y = 840)
         self.vline = None
         self.annotate = None
         self.plotline = None
@@ -711,6 +734,7 @@ class mclass:
         ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.set_ylim([int(self.str_ybottom.get()), 0])
+        ax.set_xlim([float(self.str_startfreq.get()), float(self.str_stopfreq.get())])
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
 
         try:
@@ -799,7 +823,9 @@ class mclass:
                 #print("der")
                 new_right = right-span
                 if new_right > 20000: new_right = 20000
-                if right != new_right and left != new_right: ax.set_xlim(right=new_right)
+                if right != new_right and left != new_right:
+                    ax.set_xlim(right=new_right)
+                    self.str_stopfreq.set(new_right)
 
             #muevo para la izq. aumento el de la derecha e izq.
             else:
@@ -807,7 +833,9 @@ class mclass:
                 #print("izq")
                 new_left = left+span
                 if new_left < 20: new_left = 20
-                if left != new_left and new_left != right: ax.set_xlim(left=new_left)
+                if left != new_left and new_left != right:
+                    ax.set_xlim(left=new_left)
+                    self.str_startfreq.set(new_left)
 
             return
 
@@ -827,7 +855,8 @@ class mclass:
             x_pos = self.x1.index(xval)
             y = self.y1[x_pos]
 
-            self.str_harm_details.set("cursor: " + str(xval).rjust(6, " ") + " Hz" + ', ' + str('{0:.2f}'.format(y)).rjust(4, " ") + " dB")
+            self.str_harm_details.set("cursor: " + str(xval).rjust(6, " ") + " Hz" + ', '
+                                      + str('{0:.2f}'.format(y)).ljust(4, " ") + " dB")
 
             # draw line over closest peak around cursor
             left, right = ax.get_xlim()
@@ -850,7 +879,7 @@ class mclass:
                 #TODO move this to replot?
                 self.vline = ax.axvline(x=xpeak, color='red', ls=':', lw=2)
 
-                new_data = "\n peak: %s Hz, %s dB" % ( str(xpeak).rjust(6, " "), str('{0:.2f}'.format(self.y1[self.x1.index(xpeak)])).rjust(4, " "))
+                new_data = "\n%s %s Hz, %s dB" % ("peak:".ljust(7, " "), str(xpeak).rjust(6, " "), str('{0:.2f}'.format(self.y1[self.x1.index(xpeak)])).rjust(6, " "))
                 self.str_harm_details.set(self.str_harm_details.get() + new_data)
 
                 self.current_peak = xpeak
@@ -892,8 +921,8 @@ class mclass:
         #en los otros dos se aumentan y disminuyen ambos
         #width = right - left
         #forth = width / 4
-        #print("\n\n\n\nwidth:%d, forth: %d" % (width, forth))
         #xcursor = event.x
+        #print("\n\nleft:%d, xcursor:%d, width:%d, forth: %d, pos:%d" % (left, xcursor, width, forth, position))
 
         if event.button == "up":
             if le < len(freq_list): new_left = freq_list[le+1]
@@ -907,8 +936,12 @@ class mclass:
             print("cannot zoom no longer")
             return
 
-        if left != new_left and right != new_right and new_left != new_right: ax.set_xlim(left=new_left)
-        if left != new_left and right != new_right and new_left != new_right: ax.set_xlim(right=new_right)
+        if left != new_left and right != new_right and new_left != new_right:
+            ax.set_xlim(left=new_left)
+            self.str_startfreq.set(new_left)
+        if left != new_left and right != new_right and new_left != new_right:
+            ax.set_xlim(right=new_right)
+            self.str_stopfreq.set(new_right)
         self.on_mouse_routine = 0
 
 
