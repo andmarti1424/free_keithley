@@ -40,7 +40,7 @@ or..
 ![demo image](screenshots/a3.jpg)
 ![demo image](screenshots/thdf.jpg)
 ![demo image](screenshots/freq_resp.jpg)
-![demo image](screenshots/fft3.jpg)
+![demo image](screenshots/fft.jpg)
 
 ## Donations
 Pleeease support the development of this app by making a DONATION with PayPal.

@@ -146,19 +146,22 @@ class mclass:
         self.internal_SIGGEN_click()
 
         self.powerFrame = LabelFrame(window, text="", height=180, width=520, background=self.window['bg'])
-        self.powerFrame.place(x = 40, y = 840)
+        self.powerFrame.place(x = 30, y = 840)
         self.lbl_power = Label(self.powerFrame, text="Calculate power", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
         self.lbl_power.place(x = 10, y = 10)
         self.chk_power_var = IntVar()
         self.chk_power = Checkbutton(self.powerFrame, variable=self.chk_power_var, onvalue = 1, offvalue = 0, height=1, width = 1, font='Helvetica 22', command=self.chk_power_click, background=self.window['bg'])
         self.chk_power.select()
         self.chk_power.place(x = 190, y = 10)
-        self.lbl_resistance = Label(self.powerFrame, text="dummy load resistance", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
-        self.str_resistance = StringVar()
-        self.str_resistance.set(DEFAULT_DUMMY_RESISTANCE)
+        self.lbl_impedance = Label(self.powerFrame, text="dummy load impedance", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
+        self.str_impedance = StringVar()
+        self.str_impedance.set(DEFAULT_DUMMY_RESISTANCE)
         self.lbl_ohms = Label(self.powerFrame, text="ohms", font=('Courier New', 18), wraplength=150, justify='left', background=self.window['bg'])
-        self.etr_resistance = Entry(self.powerFrame, textvariable=self.str_resistance, font=('Courier New', 18), width=4, state=DISABLED)
+        self.cmb_impedance = ttk.Combobox(self.powerFrame, values=[2, 4, 8, 16], textvariable=self.str_impedance, font=('Courier New', 18), width=13)
+        self.cmb_impedance['state'] = 'readonly'
+        self.cmb_impedance.place(x = 215, y = 80)
         self.chk_power_click()
+
         # power details
         self.str_power_calculated = StringVar()
         self.lbl_power_calculated = Label(self.powerFrame, textvariable=self.str_power_calculated, font=('Courier New', 18), foreground='blue', background=self.window['bg'])
@@ -352,7 +355,7 @@ class mclass:
             res = format(self.fundamental_vrms, '.3f')
 
 
-            resp = float(res) ** 2 / int(self.str_resistance.get())
+            resp = float(res) ** 2 / int(self.str_impedance.get())
             self.str_power_calculated.set(format(float(res), '.3f') + "Vrms - " + format(resp, '.2f') + "Wrms")
         else:
             self.str_power_calculated.set("0.997Vrms - 0.12 Wrms")
@@ -555,18 +558,16 @@ class mclass:
 
     def chk_power_click(self):
         if self.chk_power_var.get() == 0:
-            self.lbl_resistance.place_forget()
+            self.lbl_impedance.place_forget()
             self.lbl_ohms.place_forget()
-            self.etr_resistance.config(state = 'disabled')
-            self.etr_resistance.place_forget()
+            self.cmb_impedance['state'] = 'disabled'
+            self.cmb_impedance.place_forget()
             self.str_power_calculated.set("")
         else:
-            self.etr_resistance.config(state = 'normal')
-            self.etr_resistance.icursor(len(self.str_resistance.get()))
-            self.etr_resistance.focus_set()
-            self.lbl_resistance.place(x = 10, y = 80)
+            self.cmb_impedance['state'] = 'readonly'
+            self.lbl_impedance.place(x = 10, y = 80)
             self.lbl_ohms.place(x = 280, y = 80)
-            self.etr_resistance.place(x = 215, y = 80)
+            self.cmb_impedance.place(x = 215, y = 80)
 
     def internal_SIGGEN_click(self):
         if self.chk_SIGGEN_var.get() == 0:
@@ -632,8 +633,8 @@ class mclass:
             self.rad_sinad.config(state = 'normal')
             self.cmb_SIGGEN_freq.config(state = 'readonly')
             self.etr_SIGGEN_amp.config(state = 'normal')
-            self.etr_resistance.config(state = 'normal')
             self.etr_harm_qty.focus_set()
+            #self.cmb_impedance.place(state = 'readonly')
 
         else:
             self.measure_vca()
@@ -650,7 +651,7 @@ class mclass:
             self.etr_SIGGEN_amp.config(state = 'disabled')
             self.rad_thdn.config(state = 'disabled')
             self.rad_sinad.config(state = 'disabled')
-            self.etr_resistance.config(state = 'disabled')
+            #self.cmb_impedance.place(state = 'disabled')
             self.replot_thread()
             self.measure_thread()
 
