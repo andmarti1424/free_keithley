@@ -10,7 +10,7 @@
 # settings
 SIM = 1 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
-DISPLAY = 1 # display on or off
+DISPLAY = 0 # display on or off
 WINDOW_TIME = 3000 # in ms
 REFRESH_TIME = 0.05 # in seconds. Used only on simulation
 
@@ -24,7 +24,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 matplotlib.use('TkAgg')
 from tkinter import *
-from tkinter import messagebox
+from tkinter import messagebox, LEFT, RIGHT
 import serial
 from matplotlib.ticker import AutoMinorLocator
 #, FormatStrFormatter
@@ -56,13 +56,32 @@ class mclass:
         self.std_value = Label(window, text='', fg='#1C5AAC', font=('Courier New', 16, 'bold'))
         self.std_value.place(x=150, y=400)
 
-        #moving window checkbox
-        self.chk_moving_var = IntVar()
-        self.chk_moving = Checkbutton(window, text='Moving window', command='', variable=self.chk_moving_var,
-                                      fg='#1C5AAC', font=('Courier New', 16, 'bold'), onvalue=1, offvalue=0)
-        self.chk_moving.select()
-        self.chk_moving.place(x=150, y=780)
+        #bottom right checks frame
+        fm = Frame(window)
 
+        #moving window checkbox
+        self.lbl_moving = Label(fm, text="Moving window", font=('Courier New', 12), fg='#1C5AAC', wraplength=150, justify='right', background=self.window['bg'])
+        self.chk_moving_var = IntVar()
+        self.chk_moving = Checkbutton(fm, command='', variable=self.chk_moving_var, onvalue=1, offvalue=0, width=3, anchor='w')
+        self.chk_moving.select()
+        self.lbl_moving.pack(side=LEFT)
+        self.chk_moving.pack(side=LEFT)
+
+        # VFD display
+        self.lbl_display = Label(fm, text="VFD display", font=('Courier New', 12), wraplength=150, justify='right', background=self.window['bg'])
+        self.chk_display_var = IntVar()
+        self.chk_display = Checkbutton(fm, variable=self.chk_display_var, onvalue = 1, offvalue = 0, height=1, font=('Courier New', 12), command=self.chk_display_click, background=self.window['bg'], width=3, anchor="w")
+        if DISPLAY: self.chk_display.select()
+        self.chk_display.pack(side=RIGHT)
+        self.lbl_display.pack(side=RIGHT)
+        # debug check
+        self.lbl_debug = Label(fm, text="debug", font=('Courier New', 12), wraplength=150, justify='right', background=self.window['bg'])
+        self.chk_debug_var = IntVar()
+        self.chk_debug = Checkbutton(fm, variable=self.chk_debug_var, onvalue = 1, offvalue = 0, height=1, font=('Courier New', 12), command=self.chk_debug_click, background=self.window['bg'], width=3, anchor='w')
+        if DEBUG: self.chk_debug.select()
+        self.chk_debug.pack(side=RIGHT)
+        self.lbl_debug.pack(side=RIGHT)
+        fm.pack(side=BOTTOM, anchor="se", padx=10, pady=20)
 
         #BUTTONS
         self.button_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
@@ -80,6 +99,17 @@ class mclass:
         if not SIM:
             self.start_serial()
 
+    def chk_display_click(self):
+        if SIM: return
+        if int(self.chk_display_var.get()):
+            self.send_cmd('DISP:ENAB ON')
+        else:
+            self.send_cmd('DISP:ENAB OFF')
+
+    def chk_debug_click(self):
+        global DEBUG
+        DEBUG = not DEBUG
+
     def start_serial(self):
         try:
             self.ser.port='/dev/ttyUSB0'
@@ -90,6 +120,8 @@ class mclass:
             self.ser.bytesize=serial.EIGHTBITS
             self.ser.xonxoff=False
             self.ser.open()
+            if not DISPLAY: self.send_cmd('DISP:ENAB OFF')
+            else: self.send_cmd('DISP:ENAB ON')
             self.send_cmd('*RST')
             self.send_cmd(':INITiate:CONTinuous OFF;:ABORt')
             self.send_cmd('*OPC?')
