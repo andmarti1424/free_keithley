@@ -12,7 +12,7 @@
 # some config
 SIM = 1
 DEBUG = 0
-DISPLAY = 1 # display on or off
+DISPLAY = 0 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
 DEFAULT_INPUT_SIGNAL_AMPLITUDE = 1 # default amplitude for input signal in Vrms
 DEFAULT_MAXY = 9 # max value in y axis: 10dB
@@ -119,6 +119,23 @@ class mclass:
         self.lbl_coordinates = Label(window, textvariable=self.str_coordinates, font=('Courier New', 18, 'bold'), background=self.window['bg'])
         self.lbl_coordinates.place(x = 710, y = 900)
 
+        # VFD display
+        fm = Frame(window)
+        self.lbl_display = Label(fm, text="VFD display", font=('Courier New', 12), wraplength=150, justify='left', background=self.window['bg'])
+        self.chk_display_var = IntVar()
+        self.chk_display = Checkbutton(fm, variable=self.chk_display_var, onvalue = 1, offvalue = 0, height=1, width = 1, font=('Courier New', 12), command=self.chk_display_click, background=self.window['bg'])
+        if DISPLAY: self.chk_display.select()
+        self.chk_display.pack(side=RIGHT)
+        self.lbl_display.pack(side=RIGHT)
+        # debug check
+        self.lbl_debug = Label(fm, text="debug", font=('Courier New', 12), wraplength=150, justify='left', background=self.window['bg'])
+        self.chk_debug_var = IntVar()
+        self.chk_debug = Checkbutton(fm, variable=self.chk_debug_var, onvalue = 1, offvalue = 0, height=1, width = 1, font=('Courier New', 12), command=self.chk_debug_click, background=self.window['bg'])
+        if DEBUG: self.chk_debug.select()
+        self.chk_debug.pack(side=RIGHT)
+        self.lbl_debug.pack(side=RIGHT)
+        fm.pack(side=BOTTOM, anchor="se", padx=10, pady=20)
+
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
         self.but_quit.place(x=40, y=680)
@@ -149,6 +166,7 @@ class mclass:
             self.ser.xonxoff=False
             self.ser.open()
             if not DISPLAY: self.send_cmd('DISP:ENAB OFF')
+            else: self.send_cmd('DISP:ENAB ON')
             self.send_cmd('*RST')
             self.send_cmd(':INITiate:CONTinuous OFF;:ABORt')
             self.send_cmd('*OPC?')
@@ -360,6 +378,17 @@ class mclass:
         else:
             self.measurement.to_csv('freq_resp.csv', index=False)
             messagebox.showinfo("Export", "Export completed - %s" % 'freq_resp.csv')
+
+    def chk_display_click(self):
+        if SIM: return
+        if int(self.chk_display_var.get()):
+            self.send_cmd('DISP:ENAB ON')
+        else:
+            self.send_cmd('DISP:ENAB OFF')
+
+    def chk_debug_click(self):
+        global DEBUG
+        DEBUG = not DEBUG
 
     def clear(self):
         if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'freq', 'vca'])

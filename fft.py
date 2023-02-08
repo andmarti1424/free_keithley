@@ -164,6 +164,22 @@ class mclass:
         self.lbl_power_calculated = Label(self.powerFrame, textvariable=self.str_power_calculated, font=('Courier New', 18), foreground='blue', background=self.window['bg'])
         self.lbl_power_calculated.place(x = 215, y = 140)
 
+        # VFD display
+        fm = Frame(window)
+        self.lbl_display = Label(fm, text="VFD display", font=('Courier New', 12), wraplength=150, justify='left', background=self.window['bg'])
+        self.chk_display_var = IntVar()
+        self.chk_display = Checkbutton(fm, variable=self.chk_display_var, onvalue = 1, offvalue = 0, height=1, width = 1, font=('Courier New', 12), command=self.chk_display_click, background=self.window['bg'])
+        if DISPLAY: self.chk_display.select()
+        self.chk_display.pack(side=RIGHT)
+        self.lbl_display.pack(side=RIGHT)
+        # debug check
+        self.lbl_debug = Label(fm, text="debug", font=('Courier New', 12), wraplength=150, justify='left', background=self.window['bg'])
+        self.chk_debug_var = IntVar()
+        self.chk_debug = Checkbutton(fm, variable=self.chk_debug_var, onvalue = 1, offvalue = 0, height=1, width = 1, font=('Courier New', 12), command=self.chk_debug_click, background=self.window['bg'])
+        if DEBUG: self.chk_debug.select()
+        self.chk_debug.pack(side=RIGHT)
+        self.lbl_debug.pack(side=RIGHT)
+        fm.pack(side=BOTTOM, anchor="se", padx=10, pady=20)
 
         #y axis bottom value
         self.str_ybottom = StringVar()
@@ -361,6 +377,12 @@ class mclass:
         self.send_cmd(':SENS:DIST:HARM ' + "{0:02d}".format(int(self.str_harm_qty.get())))
         self.send_cmd(':UNIT:DIST PERC')
         self.send_cmd(':SENS:DIST:SFIL NONE')
+        #self.send_cmd(':SENS:DIST:SFIL CCITT')   #DOES NOT WORK
+        #self.send_cmd(':SENS:DIST:SFIL C')   #DOES NOT WORK
+        #self.send_cmd(':SENS:DIST:SFIL CCIRARM')   #DOES NOT WORK
+        ##self.send_cmd(':SENS:DIST:SFIL A')
+        #self.send_cmd(':SENS:DIST:SFIL CCIR')   #DOES NOT WORK
+
         self.send_cmd(':SENS:DIST:RANG:AUTO ON')
         #self.send_cmd(':SENS:DIST:FREQ:AUTO ON')
 
@@ -467,6 +489,7 @@ class mclass:
             #if self.str_SIGGEN_freq == "20" and fft_bin_width == 20:
             #if fft_bin_width == 20:
             self.send_cmd(':SENS:DIST:FREQ 20') # attempt 20 Hz bins
+
             self.send_cmd(':INIT')
             self.send_cmd('*OPC?')
 
@@ -518,6 +541,17 @@ class mclass:
              #bnoise_uv = bnoise * 1E6
              #print('Background Noise: {} uVrms'.format(float(bnoise_uv)))
 
+
+    def chk_display_click(self):
+        if SIM: return
+        if int(self.chk_display_var.get()):
+            self.send_cmd('DISP:ENAB ON')
+        else:
+            self.send_cmd('DISP:ENAB OFF')
+
+    def chk_debug_click(self):
+        global DEBUG
+        DEBUG = not DEBUG
 
     def chk_power_click(self):
         if self.chk_power_var.get() == 0:
@@ -642,6 +676,7 @@ class mclass:
         #self.plotdata = ax.semilogx(self.x1, self.y1, '-', color='limegreen')
         #ax.semilogx(self.x1, self.y1, '-', color='tab:blue')
         ax.semilogx(self.x1, self.y1, '-', color='dodgerblue')
+
         # this set xticks have to be after semilogx
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         self.plotline = ax.lines[len(ax.lines)-1]
@@ -681,7 +716,7 @@ class mclass:
             try:
                 ax.lines.pop(ax.lines.index(self.plotline))
             except:
-                #print("error 3 replot_")
+                print("error 3 replot_")
                 #print(ax.lines.index(self.plotline))
                 pass
 
@@ -724,6 +759,9 @@ class mclass:
 
         #redraw FFT curve
         left, right = ax.get_xlim()
+        #FIXME?
+        #ax.clear()
+
         #ax.semilogx(self.x1, self.y1, '-', color='limegreen')
         #ax.semilogx(self.x1, self.y1, '-', color='tab:blue')
         ax.semilogx(self.x1, self.y1, '-', color='dodgerblue')
@@ -943,6 +981,20 @@ class mclass:
             ax.set_xlim(right=new_right)
             self.str_stopfreq.set(new_right)
         self.on_mouse_routine = 0
+
+    def hann(self, total_data):
+        hann_array = np.zeros(total_data)
+        for i in range(total_data):
+            hann_array[i] = 0.5 - 0.5 * np.cos((2 * np.pi * i) / (total_data - 1))
+        return hann_array
+
+    def hamm(self, total_data):
+        hann_array = np.zeros(total_data)
+        for i in range(total_data):
+            hann_array[i] = 0.5386 - 0.46164 * np.cos((2 * np.pi * i) / (total_data - 1))
+        return hann_array
+
+
 
 
 window = Tk()

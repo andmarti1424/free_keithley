@@ -1,7 +1,7 @@
 # some config
 SIM = 1
 DEBUG = 0
-DISPLAY = 1 # display on or off
+DISPLAY = 0 # display on or off
 DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
 DEFAULT_VIN_MIN = 0.1
 DEFAULT_VIN_MAX = 1.5
@@ -150,6 +150,23 @@ class mclass:
         for d in self.colors_det:
             self.txt_coordinates.tag_configure(d, foreground=d, font=('Courier New', 20, ''))
 
+        # VFD display
+        fm = Frame(window)
+        self.lbl_display = Label(fm, text="VFD display", font=('Courier New', 12), wraplength=150, justify='left', background=self.window['bg'])
+        self.chk_display_var = IntVar()
+        self.chk_display = Checkbutton(fm, variable=self.chk_display_var, onvalue = 1, offvalue = 0, height=1, width = 1, font=('Courier New', 12), command=self.chk_display_click, background=self.window['bg'])
+        if DISPLAY: self.chk_display.select()
+        self.chk_display.pack(side=RIGHT)
+        self.lbl_display.pack(side=RIGHT)
+        # debug check
+        self.lbl_debug = Label(fm, text="debug", font=('Courier New', 12), wraplength=150, justify='left', background=self.window['bg'])
+        self.chk_debug_var = IntVar()
+        self.chk_debug = Checkbutton(fm, variable=self.chk_debug_var, onvalue = 1, offvalue = 0, height=1, width = 1, font=('Courier New', 12), command=self.chk_debug_click, background=self.window['bg'])
+        if DEBUG: self.chk_debug.select()
+        self.chk_debug.pack(side=RIGHT)
+        self.lbl_debug.pack(side=RIGHT)
+        fm.pack(side=BOTTOM, anchor="se", padx=10, pady=20)
+
         # buttons
         self.but_quit = Button(window, text="QUIT", command=self.quit, font=('Courier New', 18))
         self.but_quit.place(x=40, y=680)
@@ -160,6 +177,7 @@ class mclass:
         self.but_export = Button(window, text="EXPORT", command=self.export, font=('Courier New', 18))
         self.but_export.place(x=420, y=680)
         #end of ui
+
 
         self.measurement = pd.DataFrame(columns = ['id', 'vin', 'vout', 'thd', 'impedance'])
         if SIM:
@@ -178,6 +196,7 @@ class mclass:
             self.ser.xonxoff=False
             self.ser.open()
             if not DISPLAY: self.send_cmd('DISP:ENAB OFF')
+            else: self.send_cmd('DISP:ENAB ON')
             self.send_cmd('*RST')
             self.send_cmd(':INITiate:CONTinuous OFF;:ABORt')
             self.send_cmd('*OPC?')
@@ -525,6 +544,17 @@ class mclass:
 
             self.txt_coordinates.insert(END, "cursor: (%s, %s)" % (format(event.xdata, '.2f'), y))
             self.txt_coordinates.config(state='disabled')
+
+    def chk_display_click(self):
+        if SIM: return
+        if int(self.chk_display_var.get()):
+            self.send_cmd('DISP:ENAB ON')
+        else:
+            self.send_cmd('DISP:ENAB OFF')
+
+    def chk_debug_click(self):
+        global DEBUG
+        DEBUG = not DEBUG
 
 window = Tk()
 start = mclass(window)
