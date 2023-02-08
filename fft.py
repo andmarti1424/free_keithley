@@ -339,7 +339,7 @@ class mclass:
             resp = float(res) ** 2 / int(self.str_resistance.get())
             self.str_power_calculated.set(format(float(res), '.3f') + "Vrms - " + format(resp, '.2f') + "Wrms")
         else:
-            self.str_power_calculated.set("1.52 Wrms")
+            self.str_power_calculated.set("0.997Vrms - 0.12 Wrms")
 
 
     #enable en setup internal SIG GEN
@@ -411,10 +411,10 @@ class mclass:
         #:SENS:DIST:HARM:MAGN? 02,06                ;query individual harmonic levels
         """
         if SIM:
-            new_textHz = "1002.52412"
-            new_textVac = "1.361287"
-            new_textdB = "-50.152312"
-            new_textperc = "12.17492"
+            new_textHz = "1000.01300"
+            new_textVac = "0.997453"
+            new_textdB = "-72.086433"
+            new_textperc = "0.019134"
             self.str_hz.set(new_textHz)
             self.str_vac.set(new_textVac)
             self.str_dB.set(new_textdB)
