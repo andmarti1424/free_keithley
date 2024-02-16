@@ -33,7 +33,7 @@ my RS232 times are:
 """
 
 # Some settings
-SIM = 1 # do not interact with equipment, just sim data
+SIM = 0 # do not interact with equipment, just sim data
 DEBUG = 0 # print debug data on terminal
 DISPLAY = 0 # display on or off
 UPDATE_INTERVAL= 1 # only used on sim.
