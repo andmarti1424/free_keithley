@@ -668,8 +668,9 @@ class mclass:
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
-        ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
-        ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+        # la escala del eje Y cada 0.5 entre 0 y 5
+        #ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20)
+        ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10))
         #ax.tick_params(axis='x',which='minor',direction='out',bottom=True,length=5)
         ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([int(self.str_ybottom.get()), 0])
@@ -712,13 +713,14 @@ class mclass:
              #print("error 2 tight layout")
              pass
 
-        #ax.lines.pop(0) #remove first line from graph insted of clearing
+        #remove first line from graph instead of clearing
+        #ax.lines[0].remove()
         if self.plotline is not None:
             try:
-                ax.lines.pop(ax.lines.index(self.plotline))
+                ax.lines[ax.lines.index(self.plotline)].remove()
             except:
                 print("error 3 replot_")
-                #print(ax.lines.index(self.plotline))
+                print(ax.lines.index(self.plotline))
                 pass
 
         #plot peak points
@@ -770,7 +772,9 @@ class mclass:
         ax.set_xlim([left, right])
         self.plotline = ax.lines[len(ax.lines)-1]
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
-        ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
+        # la escala del eje Y cada 0.5 entre 0 y 5
+        #ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10), fontsize=20)
+        ax.yaxis.set_ticks(np.arange(int(self.str_ybottom.get()), 0, 10))
         ax.tick_params(labeltop=False, labelright=True,  labelsize=14)
         ax.set_ylim([int(self.str_ybottom.get()), 0])
         ax.set_xlim([float(self.str_startfreq.get()), float(self.str_stopfreq.get())])
