@@ -1,5 +1,5 @@
 # free_keithley
-Plotting / measurement software for Keithley 2015 THD multimeter
+Free measurement / plotting software for Keithley 2015 THD multimeter
 
 <img src="screenshots/2015front.jpg" width="400">
 
