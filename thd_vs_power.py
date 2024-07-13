@@ -1,6 +1,6 @@
 # some config
-SIM = 1
-DEBUG = 0
+SIM = 0
+DEBUG = 1
 DISPLAY = 0 # display on or off
 DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
 DEFAULT_VIN_MIN = 0.1

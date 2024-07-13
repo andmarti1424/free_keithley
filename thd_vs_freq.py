@@ -1,5 +1,5 @@
 # some config
-SIM = 1
+SIM = 0
 DEBUG = 0
 DISPLAY = 0 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
@@ -422,7 +422,8 @@ class mclass:
         #ax.minorticks_on()
         #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         #ax.set_xlim([20, 20000])
-        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20, visible=True) # la escala del eje Y cada 0.5 entre 0 y 5
+        #ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20, visible=True) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5)) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
         #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([0, float(self.str_maxy.get())])
@@ -457,7 +458,8 @@ class mclass:
         ax.grid(which="both", axis='both', color='slategray', linestyle='--', linewidth=0.7)
         ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
         ax.set_xlim([20, 20000])
-        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
+        #ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5)) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.yaxis.set_minor_locator(AutoMinorLocator(2))
         ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([0, float(self.str_maxy.get())])
