@@ -1,5 +1,5 @@
 # some config
-SIM = 0
+SIM = 1
 DEBUG = 1
 DISPLAY = 0 # display on or off
 DEFAULT_QTY_HARM = 4 # default number of harmonics to use for THD measurement of each freq.
@@ -451,7 +451,8 @@ class mclass:
 #        #ax.minorticks_on()
 #        #ax.set_xticks([20,50,100,200,500,1000,2000,5000,10000,20000], ["20", "50", "100", "200", "500", "1K", "2K", "5K", "10K", "20K"])
 #        #ax.set_xlim([20, 20000])
-        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20, visible=True) # la escala del eje Y cada 0.5 entre 0 y 5
+        #ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20, visible=True) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5)) # la escala del eje Y cada 0.5 entre 0 y 5
 #        #ax.yaxis.set_minor_locator(AutoMinorLocator())
 #        #ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
         ax.set_ylim([0, float(self.str_maxy.get())])
@@ -492,7 +493,8 @@ class mclass:
         ax.set_xticks([0.01, 0.1, 1, 10, 100], ["0.01", "0.1", "1", "10", "100"])
         ax.set_xlim([0.1, 10])
         #ax.set_xlim([0.1, 100])
-        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
+        #ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5), fontsize=20) # la escala del eje Y cada 0.5 entre 0 y 5
+        ax.yaxis.set_ticks(np.arange(0, float(self.str_maxy.get()), 0.5)) # la escala del eje Y cada 0.5 entre 0 y 5
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         #ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.tick_params(axis='y', which='minor', length=6, width='1', left='true', right='true')
