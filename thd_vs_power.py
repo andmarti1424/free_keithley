@@ -326,6 +326,13 @@ class mclass:
             # create data structure
             if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'vin', 'vout', 'thd', 'impedance'])
 
+
+            #-----------------------------------------------------
+            # to get rid of concating to empty dataframe A
+            #FIXME THIS HACK
+            self.measurement = self.measurement._append({'id': -1, 'vin': -1, 'vout': -1, 'thd': -1, 'impedance': -1}, ignore_index=True)
+            #-----------------------------------------------------
+
             vin_min = float(self.str_vin_min.get())
             vin_max = float(self.str_vin_max.get())
             step =  round((vin_max - vin_min) / (float(self.etr_points.get())-1), 4)
@@ -335,14 +342,22 @@ class mclass:
 
             #for each input signal we add it to dest data structure
             for n in np.arange(vin_min, vin_max + step, step):
-                #print(">> ", round(n, 4))
-                self.measurement = pd.concat([self.measurement, pd.DataFrame({'vin' : [round(n, 4)]})], ignore_index=True)
+                 self.measurement = pd.concat([self.measurement, pd.DataFrame({'vin' : [round(n, 4)]})], ignore_index=True)
+
+            #-----------------------------------------------------
+            #FIXME THIS HACK
+            # to get rid of concating to empty dataframe B
+            self.measurement.drop(self.measurement[self.measurement['id'] == -1].index, inplace = True)
+            #-----------------------------------------------------
+
 
             #fill load impedance in case we change impedance between plots
-            self.measurement['impedance'].fillna(int(self.str_load_impedance.get()), inplace=True)
+            #self.measurement['impedance'].fillna(int(self.str_load_impedance.get()), inplace=True)
+            self.measurement['impedance'] = int(self.str_load_impedance.get())
 
             #fill empty values of id with self.plots
-            self.measurement['id'].fillna(self.plots, inplace=True)
+            self.measurement['id'] = self.measurement['id'].astype(float)
+            self.measurement.fillna({'id': self.plots}, inplace=True)
 
             # enable siggen
             self.enable_siggen()
@@ -466,8 +481,10 @@ class mclass:
         # set legend color
         ax.legend(self.measurement['id'].astype('int').unique(), fontsize=14)
         leg = ax.get_legend()
-        for i, j in enumerate(leg.legendHandles):
+        #for i, j in enumerate(leg.legendHandles):
+        for i, j in enumerate(leg.legend_handles):
             j.set_color(self.colors[i])
+
 
         plt.gcf().canvas.draw_idle()
         plt.gcf().canvas.start_event_loop(0.01)
@@ -504,7 +521,8 @@ class mclass:
         # set legend color
         ax.legend(self.measurement['id'].astype('int').unique())
         leg = ax.get_legend()
-        for i, j in enumerate(leg.legendHandles):
+        #for i, j in enumerate(leg.legendHandles):
+        for i, j in enumerate(leg.legend_handles):
             j.set_color(self.colors[i])
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)

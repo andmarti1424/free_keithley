@@ -1,0 +1,3 @@
+202407 - Fix some issues because of pandas and matplotlib updates.
+         Only done on THDvsPower. Still to fix them on others.
+
