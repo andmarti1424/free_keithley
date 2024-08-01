@@ -1,3 +1,2 @@
 202407 - Fix some issues because of pandas and matplotlib updates.
-         Only done on THDvsPower and THDvsFREQ. Still to fix them on others.
 

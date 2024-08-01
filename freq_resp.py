@@ -270,13 +270,21 @@ class mclass:
 
             #store each decade freq (range)
             self.decades_freq = pd.DataFrame(columns = ['freq'])
-            if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'freq', 'vca'])
+            #if not self.plots: self.measurement = pd.DataFrame(columns = ['id', 'freq', 'vca'])
+            #-----------------------------------------------------
+            # to get rid of concating to empty dataframe A
+            #FIXME THIS HACK
+            if not self.plots: self.measurement = pd.DataFrame({'id': -1, 'freq': -1, 'vca': -1}, index=[0])
+            #if not self.plots: self.measurement = self.measurement._append({'id': -1, 'freq': -1, 'vca': -1}, ignore_index=True)
+            #-----------------------------------------------------
+
             for d in range(1, 5, 1):
                 for x in range(2, 11, 1):
                     self.decades_freq = pd.concat([self.decades_freq, pd.DataFrame({'freq' : [x*10**d]})], ignore_index=True)
                     #print(x * (10 ** d))
                     if d == 4 and x == 2: break
             #print(self.decades_freq)
+
 
             # now identify each freq for the measurement, based on points per decade
             for i in self.decades_freq.index:
@@ -292,8 +300,16 @@ class mclass:
                 #for each freq. we add it to dest data structure
                 self.measurement = pd.concat([self.measurement, pd.DataFrame(points, columns =['freq'])], ignore_index=True).drop_duplicates()
 
+            #-----------------------------------------------------
+            #FIXME THIS HACK
+            # to get rid of concating to empty dataframe B
+            self.measurement.drop(self.measurement[self.measurement['id'] == -1].index, inplace = True)
+            #-----------------------------------------------------
+
             #fill empty values of id with self.plots
-            self.measurement['id'].fillna(self.plots, inplace=True)
+            #self.measurement['id'].fillna(self.plots, inplace=True)
+            self.measurement['id'] = self.measurement['id'].astype(float)
+            self.measurement.fillna({'id': self.plots}, inplace=True)
 
             if not self.plots: self.plot()
 
@@ -429,7 +445,7 @@ class mclass:
         # set legend color
         ax.legend(self.measurement['id'].astype('int').unique())
         leg = ax.get_legend()
-        for i, j in enumerate(leg.legendHandles):
+        for i, j in enumerate(leg.legend_handles):
             j.set_color(self.colors[i])
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.window)
@@ -460,7 +476,7 @@ class mclass:
         # set legend color
         ax.legend(self.measurement['id'].astype('int').unique())
         leg = ax.get_legend()
-        for i, j in enumerate(leg.legendHandles):
+        for i, j in enumerate(leg.legend_handles):
             j.set_color(self.colors[i])
 
         plt.gcf().canvas.draw_idle()

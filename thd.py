@@ -435,6 +435,7 @@ class mclass:
     def replot(self):
         if SIM:
             #sim change in data
+            self.data['dB'] = self.data['dB'].astype(float)
             value = np.random.uniform(-1,1)
             self.data.iloc[1, self.data.columns.get_loc('dB')] += 15 * value
             value = np.random.uniform(-1,1)
