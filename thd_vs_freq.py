@@ -1,5 +1,5 @@
 # some config
-SIM = 0
+SIM = 1
 DEBUG = 0
 DISPLAY = 0 # display on or off
 DEFAULT_POINTS_PER_DECADE = 3  #4 means for instance that between 20hz and 30hz you will have 2 other points: [22.89 Hz and 26.21 Hz]
@@ -328,11 +328,22 @@ class mclass:
                 points = [round(num, 2) for num in points]
                 #print(points)
                 #for each freq. we add it to dest data structure
+
+            #-----------------------------------------------------
+            # to get rid of concating to empty dataframe A
+            #FIXME THIS HACK
+                self.measurement = self.measurement._append({'id': -1, 'thd': -1, 'freq': -1}, ignore_index=True)
                 self.measurement = pd.concat([self.measurement, pd.DataFrame(points, columns =['freq'])], ignore_index=True).drop_duplicates()
+            #FIXME THIS HACK
+            # to get rid of concating to empty dataframe B
+                self.measurement.drop(self.measurement[self.measurement['id'] == -1].index, inplace = True)
+            #-----------------------------------------------------
                 #print(self.measurement)
 
             #fill empty values of id with self.plots
-            self.measurement['id'].fillna(self.plots, inplace=True)
+            #self.measurement['id'].fillna(self.plots, inplace=True)
+            self.measurement['id'] = self.measurement['id'].astype(float)
+            self.measurement.fillna({'id': self.plots}, inplace=True)
 
             if not self.plots: self.plot(0)
 
@@ -438,7 +449,7 @@ class mclass:
         # set legend color
         ax.legend(self.measurement['id'].astype('int').unique())
         leg = ax.get_legend()
-        for i, j in enumerate(leg.legendHandles):
+        for i, j in enumerate(leg.legend_handles):
             j.set_color(self.colors[i])
 
         plt.gcf().canvas.draw_idle()
