@@ -22,7 +22,7 @@ Free measurement / plotting software for Keithley 2015 THD multimeter
 
 or
 
-```python thd.py```
+```python thd_vs_freq.py```
 
 or..
 
@@ -30,16 +30,16 @@ or..
 
 ```python logger.py```
 
-```python thd_vs_freq.py```
+```python thd.py```
 
 ```python fft.py```
 
 ## Screenshots
 ![demo image](screenshots/thdp.jpg)
-![demo image](screenshots/logger2.jpg)
-![demo image](screenshots/a3.jpg)
 ![demo image](screenshots/thdf.jpg)
 ![demo image](screenshots/freq_resp.jpg)
+![demo image](screenshots/logger2.jpg)
+![demo image](screenshots/a3.jpg)
 ![demo image](screenshots/fft4.jpg)
 
 ## Donations
